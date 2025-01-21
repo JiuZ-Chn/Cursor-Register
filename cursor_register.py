@@ -11,7 +11,7 @@ from datetime import datetime
 
 from faker import Faker
 from DrissionPage import ChromiumOptions, Chromium
-from temp_mails import Tempmail_io, Guerillamail_com
+from temp_mails import Tempmail_lol, Guerillamail_com
 
 CURSOR_URL = "https://www.cursor.com/"
 CURSOR_LOGIN_URL = "https://authenticator.cursor.sh"
@@ -61,7 +61,7 @@ def sign_up(options):
     thread_id = threading.current_thread().ident
     
     # Get temp email address
-    mail = Tempmail_io()
+    mail = Tempmail_lol()
     #mail = Guerillamail_com()
     email = mail.email
 
