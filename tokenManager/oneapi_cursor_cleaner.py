@@ -23,13 +23,15 @@ def handle_oneapi_cursor_channel(channel_id,
     data = response.json()['data']
     key = data['key']
     status = data['status'] # 1 for enable, 2 for disbale
+    response_time = data['response_time']
+    test_time = data['test_time']
     remaining_balance = Cursor.get_remaining_balance(key)
     remaining_days = Cursor.get_trial_remaining_days(key)
-    print(f"[OneAPI] Channel {channel_id} Info: Balance = {remaining_balance}. Trial Remaining Days = {remaining_days}")
+    print(f"[OneAPI] Channel {channel_id} Info: Balance = {remaining_balance}. Trial Remaining Days = {remaining_days}. Response Time = {response_time}")
     if None in [remaining_balance, remaining_days]:
         print(f"[OneAPI] Invalid resposne")
         return None
-    if remaining_balance < low_balance_threshold:# or remaining_days <= 0:
+    if remaining_balance < low_balance_threshold or (test_time != 0 and response_time < 1000) # or remaining_days <= 0:
         if delete_low_balance_channel:
             response = oneapi.delete_channel(channel_id)
             print(f"[OneAPI] Delete Channel {channel_id}. Status Coue: {response.status_code}")
