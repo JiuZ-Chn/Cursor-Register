@@ -89,3 +89,9 @@ class OneAPIManager:
 
         response = requests.put(url, json=data, headers=self.headers)
         return response
+
+    def test_channel(self, id, model = ""):
+        url = self.baseurl + f"/api/channel/test/{id}?model={model}"
+
+        response = requests.get(url, headers=self.headers)
+        return response
