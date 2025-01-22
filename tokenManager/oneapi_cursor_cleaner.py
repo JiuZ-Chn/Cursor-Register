@@ -23,8 +23,8 @@ def handle_oneapi_cursor_channel(channel_id,
     data = response.json()['data']
     key = data['key']
     status = data['status'] # 1 for enable, 2 for disbale
-    response_time = data['response_time']
     test_time = data['test_time']
+    response_time = data['response_time']
     remaining_balance = Cursor.get_remaining_balance(key)
     remaining_days = Cursor.get_trial_remaining_days(key)
     print(f"[OneAPI] Channel {channel_id} Info: Balance = {remaining_balance}. Trial Remaining Days = {remaining_days}. Response Time = {response_time}")
