@@ -17,7 +17,12 @@ def handle_oneapi_cursor_channel(oneapi: OneAPIManager,
                                  disable_low_balance_channel: bool, 
                                  delete_low_balance_channel: bool,
                                  low_balance_threshold = 10):
-    
+    if test_channel:
+        test_response = oneapi.test_channel(channel_id)
+        if test_response.status_code != 200:
+            print(f"Fail to test channel {channel_id}. Status Code: {response.status_code}")
+            return None
+
     response = oneapi.get_channel(channel_id)
     if response.status_code != 200:
         print(f"Fail to get channel {channel_id}. Status Code: {response.status_code}")
@@ -28,11 +33,6 @@ def handle_oneapi_cursor_channel(oneapi: OneAPIManager,
     status = data['status'] # 1 for enable, 2 for disbale
     test_time = data['test_time']
     response_time = data['response_time']
-    if test_channel and test_time == 0:
-        test_response = oneapi.test_channel(channel_id)
-        if test_response.status_code == 200 and test_response.json()["success"]:
-            response_time = test_response.json()["time"]
-
     remaining_balance = Cursor.get_remaining_balance(key)
     remaining_days = Cursor.get_trial_remaining_days(key)
     print(f"[OneAPI] Channel {channel_id} Info: Balance = {remaining_balance}. Trial Remaining Days = {remaining_days}. Response Time = {response_time}")
