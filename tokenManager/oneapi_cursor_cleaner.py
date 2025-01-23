@@ -13,8 +13,9 @@ from cursor import Cursor
 
 def handle_oneapi_cursor_channel(oneapi: OneAPIManager,
                                  channel_id,
-                                 disable_low_balance_channel, 
-                                 delete_low_balance_channel,
+                                 test_channel: bool,
+                                 disable_low_balance_channel: bool, 
+                                 delete_low_balance_channel: bool,
                                  low_balance_threshold = 10):
     
     response = oneapi.get_channel(channel_id)
@@ -27,6 +28,10 @@ def handle_oneapi_cursor_channel(oneapi: OneAPIManager,
     status = data['status'] # 1 for enable, 2 for disbale
     test_time = data['test_time']
     response_time = data['response_time']
+    if test_channel and test_time == 0:
+        test_response = oneapi.test_channel(channel_id)
+        if test_response.status_code == 200 and test_response.json()["success"]:
+            response_time = test_response.json()["time"]
 
     remaining_balance = Cursor.get_remaining_balance(key)
     remaining_days = Cursor.get_trial_remaining_days(key)
@@ -50,6 +55,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--oneapi_url', type=str, required=False, help='URL link for One-API website')
     parser.add_argument('--oneapi_token', type=str, required=False, help='Token for One-API website')
+    parser.add_argument('--test_channel', default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--disable_low_balance_accounts', default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--delete_low_balance_accounts', default=False, type=lambda x: (str(x).lower() == 'true'))
 
@@ -58,6 +64,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     oneapi_url = args.oneapi_url
     oneapi_token = args.oneapi_token
+    test_channel = args.test_channel
     disable_low_balance_accounts = args.disable_low_balance_accounts 
     delete_low_balance_accounts = args.delete_low_balance_accounts
     max_workers = args.max_workers
@@ -72,7 +79,7 @@ if __name__ == "__main__":
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(handle_oneapi_cursor_channel, 
-                                   oneapi, id, disable_low_balance_accounts, delete_low_balance_accounts) 
+                                   oneapi, id, test_channel, disable_low_balance_accounts, delete_low_balance_accounts) 
                                    for id in channels_ids]
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
