@@ -3,6 +3,10 @@ name: OneAPI Cursor Cleaner
 on:
   workflow_dispatch:
     inputs:
+      test_channel:
+        description: 'Test channel'
+        type: boolean
+        default: false
       disable_accounts:
         description: 'Disable Low Balance Accounts'
         type: boolean
@@ -22,4 +26,4 @@ jobs:
           pip3 install -r ./requirements.txt
       - name: Run script
         run: |
-          python3 ./tokenManager/oneapi_cursor_cleaner.py --oneapi_url "${{ secrets.CURSOR_ONEAPI_URL }}" --oneapi_token "${{ secrets.CURSOR_ONEAPI_TOKEN }}" --disable_low_balance_accounts "${{ github.event.inputs.disable_accounts }}" --delete_low_balance_accounts "${{ github.event.inputs.delete_accounts }}"
+          python3 ./tokenManager/oneapi_cursor_cleaner.py --oneapi_url "${{ secrets.CURSOR_ONEAPI_URL }}" --oneapi_token "${{ secrets.CURSOR_ONEAPI_TOKEN }}" --test_channel "${{ github.event.inputs.test_channel }}" --disable_low_balance_accounts "${{ github.event.inputs.disable_accounts }}" --delete_low_balance_accounts "${{ github.event.inputs.delete_accounts }}"
