@@ -11,7 +11,8 @@ import concurrent.futures
 from oneapi_manager import OneAPIManager
 from cursor import Cursor
 
-def handle_oneapi_cursor_channel(channel_id,
+def handle_oneapi_cursor_channel(oneapi: OneAPIManager,
+                                 channel_id,
                                  disable_low_balance_channel, 
                                  delete_low_balance_channel,
                                  low_balance_threshold = 10):
@@ -19,19 +20,24 @@ def handle_oneapi_cursor_channel(channel_id,
     response = oneapi.get_channel(channel_id)
     if response.status_code != 200:
         print(f"Fail to get channel {channel_id}. Status Code: {response.status_code}")
+        return None
 
     data = response.json()['data']
     key = data['key']
     status = data['status'] # 1 for enable, 2 for disbale
     test_time = data['test_time']
     response_time = data['response_time']
+
     remaining_balance = Cursor.get_remaining_balance(key)
     remaining_days = Cursor.get_trial_remaining_days(key)
     print(f"[OneAPI] Channel {channel_id} Info: Balance = {remaining_balance}. Trial Remaining Days = {remaining_days}. Response Time = {response_time}")
+
     if None in [remaining_balance, remaining_days]:
         print(f"[OneAPI] Invalid resposne")
         return None
-    if remaining_balance < low_balance_threshold or (test_time != 0 and response_time < 1000) # or remaining_days <= 0:
+
+    if remaining_balance < low_balance_threshold \
+        or (test_time != 0 and response_time < 1000): # or remaining_days <= 0:
         if delete_low_balance_channel:
             response = oneapi.delete_channel(channel_id)
             print(f"[OneAPI] Delete Channel {channel_id}. Status Coue: {response.status_code}")
@@ -66,7 +72,7 @@ if __name__ == "__main__":
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(handle_oneapi_cursor_channel, 
-                                   id, disable_low_balance_accounts, delete_low_balance_accounts) 
+                                   oneapi, id, disable_low_balance_accounts, delete_low_balance_accounts) 
                                    for id in channels_ids]
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
