@@ -81,7 +81,7 @@ def sign_up(options):
             tab.wait.load_start()
             
             # In password page or data is validated, continue to next page
-            if tab.wait.url_change(CURSOR_PASSWORD_URL):
+            if tab.wait.url_change(CURSOR_PASSWORD_URL, timeout=3):
                 print(f"[Register][{thread_id}] Continue to password page")
                 break
             # If not in password page, try pass turnstile page
@@ -114,7 +114,7 @@ def sign_up(options):
             tab.wait.load_start()
 
             # In code verification page or data is validated, continue to next page
-            if tab.wait.url_change(CURSOR_MAGAIC_CODE_URL):
+            if tab.wait.url_change(CURSOR_MAGAIC_CODE_URL, timeout=3):
                 print(f"[Register][{thread_id}] Continue to email code page")
                 break
             # If not in verification code page, try pass turnstile page
@@ -181,11 +181,12 @@ def sign_up(options):
             print(f"[Register][{thread_id}] Exception when handling email code page.")
             print(e)
 
+
         if tab.url != CURSOR_URL:
             if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for email code page.")
             cursor_turnstile(tab)
 
-        if tab.wait.url_change(CURSOR_URL):
+        if tab.wait.url_change(CURSOR_URL, timeout=3):
             break
 
         tab.refresh()
