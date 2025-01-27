@@ -9,12 +9,13 @@ import concurrent.futures
 from sys import platform
 from datetime import datetime
 
-from faker import Faker
 from DrissionPage import ChromiumOptions, Chromium
 from temp_mails import Tempmail_io, Guerillamail_com
 
 CURSOR_URL = "https://www.cursor.com/"
-CURSOR_LOGIN_URL = "https://authenticator.cursor.sh"
+CURSOR_SIGN_IN_URL = "https://authenticator.cursor.sh"
+CURSOR_PASSWORD_URL = "https://authenticator.cursor.sh/password"
+CURSOR_MAGAIC_CODE_URL = "https://authenticator.cursor.sh/magic-code"
 CURSOR_SIGN_UP_URL =  "https://authenticator.cursor.sh/sign-up"
 CURSOR_SETTINGS_URL = "https://www.cursor.com/settings"
 
@@ -65,38 +66,26 @@ def sign_up(options):
     #mail = Guerillamail_com()
     email = mail.email
 
-    # Get password and name by faker
-    fake = Faker()
-    password = fake.password(length=12, special_chars=True, digits=True, upper_case=True, lower_case=True)
-    first_name, last_name = fake.name().split(' ')[0:2]
-
     email_queue = queue.Queue()
     email_thread = threading.Thread(target=wait_for_new_email_thread, args=(mail, email_queue, ))
     email_thread.daemon = True
     email_thread.start()
 
-    tab = browser.new_tab(CURSOR_SIGN_UP_URL)
-    # Input first name, last name, email
+    tab = browser.new_tab(CURSOR_SIGN_IN_URL)
+    # Input email
     for retry in range(retry_times):
         try:
-            if enable_register_log: print(f"[Register][{thread_id}][{retry}] Input first name, last name, email")
-            tab.refresh()
-            tab.ele("xpath=//input[@name='first_name']").input(first_name, clear=True)
-            tab.ele("xpath=//input[@name='last_name']").input(last_name, clear=True)
+            if enable_register_log: print(f"[Register][{thread_id}][{retry}] Input email")
             tab.ele("xpath=//input[@name='email']").input(email, clear=True)
             tab.ele("@type=submit").click()
             tab.wait.load_start()
-
-            #if tab.ele("xpath=//input[@name='email']").attr("data-invalid") == "true":
-            #    print(f"[Register][{thread_id}] Email is invalid")
-            #    return None
             
             # In password page or data is validated, continue to next page
-            if tab.wait.eles_loaded("xpath=//input[@name='password']", timeout=5):
+            if tab.wait.url_change(CURSOR_PASSWORD_URL):
                 print(f"[Register][{thread_id}] Continue to password page")
                 break
             # If not in password page, try pass turnstile page
-            elif tab.ele("xpath=//input[@name='email']", timeout=3).attr("data-valid") is not None:
+            if CURSOR_SIGN_IN_URL in tab.url and CURSOR_PASSWORD_URL not in tab.url:
                 if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for email page")
                 cursor_turnstile(tab)
 
@@ -105,9 +94,11 @@ def sign_up(options):
             print(e)
         
         # In password page or data is validated, continue to next page
-        if tab.wait.eles_loaded("xpath=//input[@name='password']"):
+        if tab.wait.url_change(CURSOR_PASSWORD_URL):
             print(f"[Register][{thread_id}] Continue to password page")
             break
+
+        tab.refresh()
 
         # Kill the function since time out 
         if retry == retry_times - 1:
@@ -115,20 +106,19 @@ def sign_up(options):
             if not enable_browser_log: browser.quit(force=True, del_data=True)
             return None
     
-    # Input password
+    # Use email sign-in code in password page
     for retry in range(retry_times):
         try:
-            if enable_register_log: print(f"[Register][{thread_id}][{retry}] Input password")
-            tab.ele("xpath=//input[@name='password']").input(password, clear=True)
-            tab.ele('@type=submit').click()
+            if enable_register_log: print(f"[Register][{thread_id}][{retry}] Email sign-in code")
+            tab.ele("xpath=//button[@value='magic-code']").click()
             tab.wait.load_start()
 
             # In code verification page or data is validated, continue to next page
-            if tab.wait.eles_loaded("xpath=//input[@data-index=0]", timeout=5):
+            if tab.wait.url_change(CURSOR_MAGAIC_CODE_URL):
                 print(f"[Register][{thread_id}] Continue to email code page")
                 break
             # If not in verification code page, try pass turnstile page
-            elif tab.ele("xpath=//input[@name='password']", timeout=3).attr("data-valid") is not None:
+            if CURSOR_PASSWORD_URL in tab.url and CURSOR_MAGAIC_CODE_URL not in tab.url:
                 if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for password page")
                 cursor_turnstile(tab)
 
@@ -137,9 +127,11 @@ def sign_up(options):
             print(e)
 
         # In code verification page or data is validated, continue to next page
-        if tab.wait.eles_loaded("xpath=//input[@data-index=0]"):
+        if tab.wait.url_change(CURSOR_MAGAIC_CODE_URL):
             print(f"[Register][{thread_id}] Continue to email code page")
             break
+
+        tab.refresh()
 
         # Kill the function since time out 
         if retry == retry_times - 1:
@@ -155,8 +147,8 @@ def sign_up(options):
         verify_code = None
         if "body_text" in data:
             message_text = data["body_text"]
-            message_text = message_text.strip().replace('\n', '').replace('\r', '').replace('=', '')
-            verify_code = re.search(r'open browser window\.(\d{6})This code expires', message_text).group(1)
+            message_text = message_text.replace(" ", "")
+            verify_code = re.search(r'(?:\r?\n)(\d{6})(?:\r?\n)', message_text).group(1)
         elif "preview" in data:
             message_text = data["preview"]
             verify_code = re.search(r'Your verification code is (\d{6})\. This code expires', message_text).group(1)
@@ -184,6 +176,7 @@ def sign_up(options):
                 tab.ele(f"xpath=//input[@data-index={idx}]").input(digit, clear=True)
                 tab.wait(0.1, 0.3)
             tab.wait(0.5, 1.5)
+
         except Exception as e:
             print(f"[Register][{thread_id}] Exception when handling email code page.")
             print(e)
@@ -192,8 +185,10 @@ def sign_up(options):
             if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for email code page.")
             cursor_turnstile(tab)
 
-        if tab.wait.url_change(CURSOR_URL, timeout=15):
+        if tab.wait.url_change(CURSOR_URL):
             break
+
+        tab.refresh()
 
         # Kill the function since time out 
         if retry == retry_times - 1:
@@ -218,14 +213,12 @@ def sign_up(options):
 
     if not hide_account_info:
         print(f"[Register] Cursor Email: {email}")
-        print(f"[Register] Cursor Password: {password}")
         print(f"[Register] Cursor Token: {token}")
 
     browser.quit(force=True, del_data=True)
 
     return {
         'username': email,
-        'password': password,
         'token': token
     }
 
@@ -265,7 +258,7 @@ def register_cursor(number, max_workers):
 
         fieldnames = results[0].keys()
 
-        # Write username, password, token into a csv file
+        # Write username, token into a csv file
         with open(csv_file, 'a', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writerows(results)
