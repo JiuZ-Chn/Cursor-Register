@@ -1,4 +1,3 @@
 DrissionPage
-faker
 temp_mails
 beautifulsoup4
