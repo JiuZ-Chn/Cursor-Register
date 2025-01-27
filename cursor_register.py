@@ -10,7 +10,8 @@ from sys import platform
 from datetime import datetime
 
 from DrissionPage import ChromiumOptions, Chromium
-from temp_mails import Tempmail_io, Guerillamail_com
+
+from helper.tempEmail.linshiguge_com import Linshigugecom
 
 CURSOR_URL = "https://www.cursor.com/"
 CURSOR_SIGN_IN_URL = "https://authenticator.cursor.sh"
@@ -46,7 +47,7 @@ def sign_up(options):
 
     def wait_for_new_email_thread(mail, queue, timeout=300):
         try:
-            data = mail.wait_for_new_email(delay=1, timeout=timeout)
+            data = mail.wait_for_message(delay=3, timeout=timeout)
             queue.put(copy.deepcopy(data))
         except Exception as e:
             queue.put(None)
@@ -61,10 +62,11 @@ def sign_up(options):
     retry_times = 5
     thread_id = threading.current_thread().ident
     
-    # Get temp email address
-    mail = Tempmail_io()
-    #mail = Guerillamail_com()
-    email = mail.email
+    mail = Linshigugecom(browser=browser)
+    email = mail.get_email_address()
+    if email is None:
+        print("[Register] Fail to get email address from temp email server")
+        return None
 
     email_queue = queue.Queue()
     email_thread = threading.Thread(target=wait_for_new_email_thread, args=(mail, email_queue, ))
@@ -93,7 +95,6 @@ def sign_up(options):
             print(f"[Register][{thread_id}] Exception when handlding email page.")
             print(e)
         
-        # In password page or data is validated, continue to next page
         if tab.wait.url_change(CURSOR_PASSWORD_URL):
             print(f"[Register][{thread_id}] Continue to password page")
             break
@@ -145,21 +146,10 @@ def sign_up(options):
         assert data is not None, "Fail to get code from email."
 
         verify_code = None
-        if "body_text" in data:
-            message_text = data["body_text"]
+        if "text" in data:
+            message_text = data["text"]
             message_text = message_text.replace(" ", "")
             verify_code = re.search(r'(?:\r?\n)(\d{6})(?:\r?\n)', message_text).group(1)
-        elif "preview" in data:
-            message_text = data["preview"]
-            verify_code = re.search(r'Your verification code is (\d{6})\. This code expires', message_text).group(1)
-        # Handle HTML format
-        elif "content" in data:
-            message_text = data["content"]
-            message_text = re.sub(r"<[^>]*>", "", message_text)
-            message_text = re.sub(r"&#8202;", "", message_text)
-            message_text = re.sub(r"&nbsp;", "", message_text)
-            message_text = re.sub(r'[\n\r\s]', "", message_text)
-            verify_code = re.search(r'openbrowserwindow\.(\d{6})Thiscodeexpires', message_text).group(1)
         assert verify_code is not None, "Fail to get code from email."
 
     except Exception as e:
