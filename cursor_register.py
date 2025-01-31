@@ -11,7 +11,7 @@ from datetime import datetime
 
 from DrissionPage import ChromiumOptions, Chromium
 
-from helper.tempEmail.linshiguge_com import Linshigugecom
+from helper.tempEmail.gmail_pm import Gmailpm
 
 CURSOR_URL = "https://www.cursor.com/"
 CURSOR_SIGN_IN_URL = "https://authenticator.cursor.sh"
@@ -61,9 +61,10 @@ def sign_up(options):
 
     retry_times = 5
     thread_id = threading.current_thread().ident
-    
-    mail = Linshigugecom(browser=browser)
-    email = mail.get_email_address()
+
+    import string
+    mail = Gmailpm(browser=browser)
+    email = mail.get_email_address(''.join(random.choice(string.ascii_letters + string.digits) for _ in range(15)))
     if email is None:
         print("[Register] Fail to get email address from temp email server")
         return None
