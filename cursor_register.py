@@ -6,7 +6,7 @@ import queue
 import argparse
 import threading
 import concurrent.futures
-from sys import platform
+from faker import Faker
 from datetime import datetime
 
 from DrissionPage import ChromiumOptions, Chromium
@@ -16,7 +16,10 @@ CURSOR_URL = "https://www.cursor.com/"
 CURSOR_SIGN_IN_URL = "https://authenticator.cursor.sh"
 CURSOR_PASSWORD_URL = "https://authenticator.cursor.sh/password"
 CURSOR_MAGAIC_CODE_URL = "https://authenticator.cursor.sh/magic-code"
-CURSOR_SIGN_UP_URL =  "https://authenticator.cursor.sh/sign-up"
+CURSOR_SIGNUP_URL =  "https://authenticator.cursor.sh/sign-up"
+CURSOR_SIGNUP_PASSWORD_URL = "https://authenticator.cursor.sh/sign-up/password"
+CURSOR_EMAIL_VERIFICATION_URL = "https://authenticator.cursor.sh/email-verification"
+
 CURSOR_SETTINGS_URL = "https://www.cursor.com/settings"
 
 # Parameters for debugging purpose
@@ -60,18 +63,21 @@ def sign_up(options):
 
     retry_times = 5
     thread_id = threading.current_thread().ident
+
+    fake = Faker()
     
     # Get temp email address
     #mail = Tempmail_io()
     mail = Guerillamail_com()
     email = mail.email
+    password = fake.password(length=12, special_chars=True, digits=True, upper_case=True, lower_case=True)
 
     email_queue = queue.Queue()
     email_thread = threading.Thread(target=wait_for_new_email_thread, args=(mail, email_queue, ))
     email_thread.daemon = True
     email_thread.start()
 
-    tab = browser.new_tab(CURSOR_SIGN_IN_URL)
+    tab = browser.new_tab(CURSOR_SIGNUP_URL)
     # Input email
     for retry in range(retry_times):
         try:
@@ -81,11 +87,11 @@ def sign_up(options):
             tab.wait.load_start()
             
             # In password page or data is validated, continue to next page
-            if tab.wait.url_change(CURSOR_PASSWORD_URL, timeout=3):
+            if tab.wait.url_change(CURSOR_SIGNUP_PASSWORD_URL, timeout=3):
                 print(f"[Register][{thread_id}] Continue to password page")
                 break
             # If not in password page, try pass turnstile page
-            if CURSOR_SIGN_IN_URL in tab.url and CURSOR_PASSWORD_URL not in tab.url:
+            if CURSOR_SIGNUP_URL in tab.url and CURSOR_SIGNUP_PASSWORD_URL not in tab.url:
                 if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for email page")
                 cursor_turnstile(tab)
 
@@ -94,7 +100,7 @@ def sign_up(options):
             print(e)
         
         # In password page or data is validated, continue to next page
-        if tab.wait.url_change(CURSOR_PASSWORD_URL):
+        if tab.wait.url_change(CURSOR_SIGNUP_PASSWORD_URL):
             print(f"[Register][{thread_id}] Continue to password page")
             break
 
@@ -109,16 +115,17 @@ def sign_up(options):
     # Use email sign-in code in password page
     for retry in range(retry_times):
         try:
-            if enable_register_log: print(f"[Register][{thread_id}][{retry}] Email sign-in code")
-            tab.ele("xpath=//button[@value='magic-code']").click()
+            if enable_register_log: print(f"[Register][{thread_id}][{retry}] Input password")
+            tab.ele("xpath=//input[@name='password']").input(password, clear=True)
+            tab.ele('@type=submit').click()
             tab.wait.load_start()
 
             # In code verification page or data is validated, continue to next page
-            if tab.wait.url_change(CURSOR_MAGAIC_CODE_URL, timeout=3):
+            if tab.wait.url_change(CURSOR_EMAIL_VERIFICATION_URL, timeout=3):
                 print(f"[Register][{thread_id}] Continue to email code page")
                 break
             # If not in verification code page, try pass turnstile page
-            if CURSOR_PASSWORD_URL in tab.url and CURSOR_MAGAIC_CODE_URL not in tab.url:
+            if CURSOR_SIGNUP_PASSWORD_URL in tab.url and CURSOR_EMAIL_VERIFICATION_URL not in tab.url:
                 if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for password page")
                 cursor_turnstile(tab)
 
@@ -127,7 +134,7 @@ def sign_up(options):
             print(e)
 
         # In code verification page or data is validated, continue to next page
-        if tab.wait.url_change(CURSOR_MAGAIC_CODE_URL):
+        if tab.wait.url_change(CURSOR_EMAIL_VERIFICATION_URL):
             print(f"[Register][{thread_id}] Continue to email code page")
             break
 
@@ -227,11 +234,10 @@ def register_cursor(number, max_workers):
 
     options = ChromiumOptions()
     options.auto_port()
-    #options.set_user_agent(f"Mozilla/5.0 ({platformIdentifier}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
-
     # Use turnstilePatch from https://github.com/TheFalloutOf76/CDP-bug-MouseEvent-.screenX-.screenY-patcher
     options.add_extension("turnstilePatch")
 
+    #options.set_user_agent(f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
     if enable_headless: 
         options.headless()
 
