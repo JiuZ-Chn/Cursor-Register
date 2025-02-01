@@ -236,11 +236,22 @@ def register_cursor(number, max_workers):
 
     options = ChromiumOptions()
     options.auto_port()
+    options.new_env()
     # Use turnstilePatch from https://github.com/TheFalloutOf76/CDP-bug-MouseEvent-.screenX-.screenY-patcher
     options.add_extension("turnstilePatch")
 
-    #options.set_user_agent(f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
+    # If fail to pass the cloudflare in headless mode, try to align the user agent with your real browser
     if enable_headless: 
+        from platform import platform
+        if platform == "linux" or platform == "linux2":
+            platformIdentifier = "X11; Linux x86_64"
+        elif platform == "darwin":
+            platformIdentifier = "Macintosh; Intel Mac OS X 10_15_7"
+        elif platform == "win32":
+            platformIdentifier = "Windows NT 10.0; Win64; x64"
+        # Please align version with your Chrome
+        chrome_version = "130.0.0.0"        
+        options.set_user_agent(f"Mozilla/5.0 ({platformIdentifier}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_version} Safari/537.36")
         options.headless()
 
     # Run the code using multithreading
@@ -261,12 +272,10 @@ def register_cursor(number, max_workers):
         token_file = f"./token_{formatted_date}.csv"
 
         fieldnames = results[0].keys()
-
         # Write username, token into a csv file
         with open(csv_file, 'a', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writerows(results)
-
         # Only write token to csv file, without header
         tokens = [{'token': row['token']} for row in results]
         with open(token_file, 'a', newline='') as file:
