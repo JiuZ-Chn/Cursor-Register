@@ -73,8 +73,9 @@ def sign_up(options):
     password = fake.password(length=12, special_chars=True, digits=True, upper_case=True, lower_case=True)
 
     email_queue = queue.Queue()
-    email_thread = threading.Thread(target=wait_for_new_email_thread, args=(mail, email_queue, ))
-    email_thread.daemon = True
+    email_thread = threading.Thread(target=wait_for_new_email_thread,
+                                    args=(mail, email_queue, ), 
+                                    daemon=True)
     email_thread.start()
 
     tab = browser.new_tab(CURSOR_SIGNUP_URL)
