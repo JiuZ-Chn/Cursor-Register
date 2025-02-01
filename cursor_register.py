@@ -7,7 +7,6 @@ import argparse
 import threading
 import concurrent.futures
 from faker import Faker
-from faker import Faker
 from datetime import datetime
 
 from DrissionPage import ChromiumOptions, Chromium
@@ -17,10 +16,6 @@ CURSOR_URL = "https://www.cursor.com/"
 CURSOR_SIGN_IN_URL = "https://authenticator.cursor.sh"
 CURSOR_PASSWORD_URL = "https://authenticator.cursor.sh/password"
 CURSOR_MAGAIC_CODE_URL = "https://authenticator.cursor.sh/magic-code"
-CURSOR_SIGNUP_URL =  "https://authenticator.cursor.sh/sign-up"
-CURSOR_SIGNUP_PASSWORD_URL = "https://authenticator.cursor.sh/sign-up/password"
-CURSOR_EMAIL_VERIFICATION_URL = "https://authenticator.cursor.sh/email-verification"
-
 CURSOR_SIGNUP_URL =  "https://authenticator.cursor.sh/sign-up"
 CURSOR_SIGNUP_PASSWORD_URL = "https://authenticator.cursor.sh/sign-up/password"
 CURSOR_EMAIL_VERIFICATION_URL = "https://authenticator.cursor.sh/email-verification"
@@ -70,28 +65,19 @@ def sign_up(options):
     thread_id = threading.current_thread().ident
 
     fake = Faker()
-
-    fake = Faker()
     
     # Get temp email address
     #mail = Tempmail_io()
     mail = Guerillamail_com()
-    #mail = Tempmail_io()
-    mail = Guerillamail_com()
     email = mail.email
-    password = fake.password(length=12, special_chars=True, digits=True, upper_case=True, lower_case=True)
     password = fake.password(length=12, special_chars=True, digits=True, upper_case=True, lower_case=True)
 
     email_queue = queue.Queue()
     email_thread = threading.Thread(target=wait_for_new_email_thread,
                                     args=(mail, email_queue, ), 
                                     daemon=True)
-    email_thread = threading.Thread(target=wait_for_new_email_thread,
-                                    args=(mail, email_queue, ), 
-                                    daemon=True)
     email_thread.start()
 
-    tab = browser.new_tab(CURSOR_SIGNUP_URL)
     tab = browser.new_tab(CURSOR_SIGNUP_URL)
     # Input email
     for retry in range(retry_times):
@@ -102,11 +88,9 @@ def sign_up(options):
             
             # In password page or data is validated, continue to next page
             if tab.wait.url_change(CURSOR_SIGNUP_PASSWORD_URL, timeout=3):
-            if tab.wait.url_change(CURSOR_SIGNUP_PASSWORD_URL, timeout=3):
                 print(f"[Register][{thread_id}] Continue to password page")
                 break
             # If not in password page, try pass turnstile page
-            if CURSOR_SIGNUP_URL in tab.url and CURSOR_SIGNUP_PASSWORD_URL not in tab.url:
             if CURSOR_SIGNUP_URL in tab.url and CURSOR_SIGNUP_PASSWORD_URL not in tab.url:
                 if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for email page")
                 cursor_turnstile(tab)
@@ -116,7 +100,6 @@ def sign_up(options):
             print(e)
         
         # In password page or data is validated, continue to next page
-        if tab.wait.url_change(CURSOR_SIGNUP_PASSWORD_URL, timeout=5):
         if tab.wait.url_change(CURSOR_SIGNUP_PASSWORD_URL, timeout=5):
             print(f"[Register][{thread_id}] Continue to password page")
             break
@@ -134,17 +117,12 @@ def sign_up(options):
             if enable_register_log: print(f"[Register][{thread_id}][{retry}] Input password")
             tab.ele("xpath=//input[@name='password']").input(password, clear=True)
             tab.ele('@type=submit').click()
-            if enable_register_log: print(f"[Register][{thread_id}][{retry}] Input password")
-            tab.ele("xpath=//input[@name='password']").input(password, clear=True)
-            tab.ele('@type=submit').click()
 
             # In code verification page or data is validated, continue to next page
-            if tab.wait.url_change(CURSOR_EMAIL_VERIFICATION_URL, timeout=3):
             if tab.wait.url_change(CURSOR_EMAIL_VERIFICATION_URL, timeout=3):
                 print(f"[Register][{thread_id}] Continue to email code page")
                 break
             # If not in verification code page, try pass turnstile page
-            if CURSOR_SIGNUP_PASSWORD_URL in tab.url and CURSOR_EMAIL_VERIFICATION_URL not in tab.url:
             if CURSOR_SIGNUP_PASSWORD_URL in tab.url and CURSOR_EMAIL_VERIFICATION_URL not in tab.url:
                 if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for password page")
                 cursor_turnstile(tab)
@@ -155,14 +133,8 @@ def sign_up(options):
 
         # In code verification page or data is validated, continue to next page
         if tab.wait.url_change(CURSOR_EMAIL_VERIFICATION_URL, timeout=5):
-        if tab.wait.url_change(CURSOR_EMAIL_VERIFICATION_URL, timeout=5):
             print(f"[Register][{thread_id}] Continue to email code page")
             break
-
-        if tab.wait.eles_loaded("xpath=//div[contains(text(), 'Sign up is restricted.')]", timeout=3):
-            print(f"[Register][{thread_id}][Error] Sign up is restricted.")
-            if not enable_browser_log: browser.quit(force=True, del_data=True)
-            return None
 
         if tab.wait.eles_loaded("xpath=//div[contains(text(), 'Sign up is restricted.')]", timeout=3):
             print(f"[Register][{thread_id}][Error] Sign up is restricted.")
@@ -265,22 +237,9 @@ def register_cursor(number, max_workers):
     options = ChromiumOptions()
     options.auto_port()
     options.new_env()
-    options.new_env()
     # Use turnstilePatch from https://github.com/TheFalloutOf76/CDP-bug-MouseEvent-.screenX-.screenY-patcher
     options.add_extension("turnstilePatch")
 
-    # If fail to pass the cloudflare in headless mode, try to align the user agent with your real browser
-    if enable_headless: 
-        from platform import platform
-        if platform == "linux" or platform == "linux2":
-            platformIdentifier = "X11; Linux x86_64"
-        elif platform == "darwin":
-            platformIdentifier = "Macintosh; Intel Mac OS X 10_15_7"
-        elif platform == "win32":
-            platformIdentifier = "Windows NT 10.0; Win64; x64"
-        # Please align version with your Chrome
-        chrome_version = "130.0.0.0"        
-        options.set_user_agent(f"Mozilla/5.0 ({platformIdentifier}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_version} Safari/537.36")
     # If fail to pass the cloudflare in headless mode, try to align the user agent with your real browser
     if enable_headless: 
         from platform import platform
