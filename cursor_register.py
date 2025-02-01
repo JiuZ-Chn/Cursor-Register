@@ -62,8 +62,8 @@ def sign_up(options):
     thread_id = threading.current_thread().ident
     
     # Get temp email address
-    mail = Tempmail_io()
-    #mail = Guerillamail_com()
+    #mail = Tempmail_io()
+    mail = Guerillamail_com()
     email = mail.email
 
     email_queue = queue.Queue()
@@ -227,16 +227,11 @@ def register_cursor(number, max_workers):
 
     options = ChromiumOptions()
     options.auto_port()
+    #options.set_user_agent(f"Mozilla/5.0 ({platformIdentifier}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
+
     # Use turnstilePatch from https://github.com/TheFalloutOf76/CDP-bug-MouseEvent-.screenX-.screenY-patcher
     options.add_extension("turnstilePatch")
 
-    if platform == "linux" or platform == "linux2":
-        platformIdentifier = "X11; Linux x86_64"
-    elif platform == "darwin":
-        platformIdentifier = "Macintosh; Intel Mac OS X 10_15_7"
-    elif platform == "win32":
-        platformIdentifier = "Windows NT 10.0; Win64; x64"
-    options.set_user_agent(f"Mozilla/5.0 ({platformIdentifier}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
     if enable_headless: 
         options.headless()
 
