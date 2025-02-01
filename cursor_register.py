@@ -84,7 +84,6 @@ def sign_up(options):
             if enable_register_log: print(f"[Register][{thread_id}][{retry}] Input email")
             tab.ele("xpath=//input[@name='email']").input(email, clear=True)
             tab.ele("@type=submit").click()
-            tab.wait.load_start()
             
             # In password page or data is validated, continue to next page
             if tab.wait.url_change(CURSOR_SIGNUP_PASSWORD_URL, timeout=3):
@@ -100,12 +99,11 @@ def sign_up(options):
             print(e)
         
         # In password page or data is validated, continue to next page
-        if tab.wait.url_change(CURSOR_SIGNUP_PASSWORD_URL):
+        if tab.wait.url_change(CURSOR_SIGNUP_PASSWORD_URL, timeout=5):
             print(f"[Register][{thread_id}] Continue to password page")
             break
 
         tab.refresh()
-
         # Kill the function since time out 
         if retry == retry_times - 1:
             print(f"[Register][{thread_id}] Timeout when inputing email address")
@@ -118,7 +116,6 @@ def sign_up(options):
             if enable_register_log: print(f"[Register][{thread_id}][{retry}] Input password")
             tab.ele("xpath=//input[@name='password']").input(password, clear=True)
             tab.ele('@type=submit').click()
-            tab.wait.load_start()
 
             # In code verification page or data is validated, continue to next page
             if tab.wait.url_change(CURSOR_EMAIL_VERIFICATION_URL, timeout=3):
@@ -134,12 +131,16 @@ def sign_up(options):
             print(e)
 
         # In code verification page or data is validated, continue to next page
-        if tab.wait.url_change(CURSOR_EMAIL_VERIFICATION_URL):
+        if tab.wait.url_change(CURSOR_EMAIL_VERIFICATION_URL, timeout=5):
             print(f"[Register][{thread_id}] Continue to email code page")
             break
 
-        tab.refresh()
+        if tab.wait.eles_loaded("xpath=//div[contains(text(), 'Sign up is restricted.')]", timeout=3):
+            print(f"[Register][{thread_id}][Error] Sign up is restricted.")
+            if not enable_browser_log: browser.quit(force=True, del_data=True)
+            return None
 
+        tab.refresh()
         # Kill the function since time out 
         if retry == retry_times - 1:
             if enable_register_log: print(f"[Register][{thread_id}] Timeout when inputing password")
