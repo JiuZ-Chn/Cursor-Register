@@ -1,4 +1,5 @@
 import requests
+import urllib.parse
 
 class OneAPIManager:
     
@@ -11,20 +12,20 @@ class OneAPIManager:
         }
 
     def get_channel(self, id):
-        url = self.base_url + f"/api/channel/{id}"
+        url = urllib.parse.urljoin(self.base_url, f"/api/channel/{id}")
 
         response = requests.get(url, headers=self.headers)
         return response
 
     def get_channels(self, page, pagesize):
-        url = self.base_url + f"/api/channel/?p={page}&page_size={pagesize}"
+        url = urllib.parse.urljoin(self.base_url, f"/api/channel/?p={page}&page_size={pagesize}")
 
         response = requests.get(url, headers=self.headers)
         return response
 
     # Support multiple keys separated by '\n'
-    def add_channel(self, name, base_url, key, models, rate_limit_count = 0):
-        url = self.base_url + "/api/channel"
+    def add_channel(self, name, base_url, key, models, tags = "", rate_limit_count = 0):
+        url = urllib.parse.urljoin(self.base_url, "/api/channel")
 
         data = {"name": name,
                 "type": 1,
@@ -54,8 +55,8 @@ class OneAPIManager:
                 "gcp_account": "",
                 "rate_limit_count":rate_limit_count,
                 "gemini_model":"",
-                "tags":"",
-                "rate_limited":rate_limit_count>0,
+                "tags": tags,
+                "rate_limited":rate_limit_count > 0,
                 "is_tools": False,
                 "claude_original_request": False,
                 "group":"default"
@@ -65,13 +66,13 @@ class OneAPIManager:
         return response
     
     def delete_channel(self, id):
-        url = self.base_url + f"/api/channel/{id}"
+        url = urllib.parse.urljoin(self.base_url, f"/api/channel/{id}")
 
         response = requests.delete(url, headers=self.headers)
         return response
     
     def enable_channel(self, id):
-        url = self.base_url + f"/api/channel"
+        url = urllib.parse.urljoin(self.base_url, f"/api/channel")
         data = {
             "id": id,
             "status": 1
@@ -81,7 +82,7 @@ class OneAPIManager:
         return response
 
     def disable_channel(self, id):
-        url = self.base_url + f"/api/channel"
+        url = urllib.parse.urljoin(self.base_url, f"/api/channel")
         data = {
             "id": id,
             "status": 2
@@ -91,7 +92,7 @@ class OneAPIManager:
         return response
 
     def test_channel(self, id, model = ""):
-        url = self.base_url + f"/api/channel/test/{id}?model={model}"
+        url = urllib.parse.urljoin(self.base_url, f"/api/channel/test/{id}?model={model}")
 
         response = requests.get(url, headers=self.headers)
         return response
