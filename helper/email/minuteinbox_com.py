@@ -1,5 +1,4 @@
 import time
-
 from DrissionPage import Chromium
 
 class Minuteinboxcom:
@@ -34,15 +33,15 @@ class Minuteinboxcom:
 
         while time.time() - start_time <= timeout:
             try:
+                self.tab.refresh()
                 self.tab.ele("xpath=//span[contains(text(), 'Cursor')]").click()
                 layout = self.tab.ele("xpath=//div[@class='base-layout-root']")
-
+                
                 return {
                     "text": layout.text
                 }
             except:
                 pass
-            
             self.tab.wait(delay)
 
         return None
