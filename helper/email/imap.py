@@ -1,6 +1,8 @@
 import time
 import imaplib
 import email
+from email.policy import default
+from datetime import datetime
 
 from _email_server import EmailServer
 
@@ -9,52 +11,58 @@ class Imap(EmailServer):
     def __init__(self, imap_server, username, password):
         self.mail = imaplib.IMAP4_SSL(imap_server)
         self.mail.login(username, password)
-        self.mail.select('inbox')
+
+        self.latest_id = None
         
-    def wait_for_message(self, delay=5, timeout=60):
+    def fetch_emails_since(self, since_timestamp):
 
-        # Search for all emails and get their IDs
-        result, data = self.mail.search(None, 'ALL')
+        # Get the latest email by id
+        self.mail.select('inbox')
+        search_criteria = f'UID {int(self.latest_id) + 1}:*' if self.latest_id else 'ALL'
+        _, data = self.mail.uid("SEARCH", None, search_criteria)
         email_ids = data[0].split()
-        if not email_ids:
-            raise Exception("No emails found.")
+        if len(email_ids) == 0:
+            return None
 
-        # Pick the most recent email (last in the list)
-        latest_id = email_ids[-1]
-
+        self.latest_id = email_ids[-1]
+        
         # Fetch the email message by ID
-        result, data = self.mail.fetch(latest_id, '(RFC822)')
+        _, data = self.mail.uid('FETCH', self.latest_id, '(RFC822)')
         raw_email = data[0][1]
-        msg = email.message_from_bytes(raw_email)
+        msg = email.message_from_bytes(raw_email, policy=default)
 
         # Extract common headers
         from_header = msg.get('From')
         to_header = msg.get('To')
+        subject_header = msg.get('Subject')
+        date_header = msg.get('Date')
 
-        # Extract email content (plain text)
-        body = ""
-        if msg.is_multipart():
-            for part in msg.walk():
-                # Look for the plain text part and avoid attachments
-                if part.get_content_type() == "text/plain" and not part.get('Content-Disposition'):
-                    payload = part.get_payload(decode=True)
-                    charset = part.get_content_charset() or 'utf-8'
-                    body = payload.decode(charset, errors='replace')
-                    break
-        else:
-            payload = msg.get_payload(decode=True)
-            charset = msg.get_content_charset() or 'utf-8'
-            body = payload.decode(charset, errors='replace')
+        email_datetime = datetime.strptime(date_header.replace(' (UTC)', ''), '%a, %d %b %Y %H:%M:%S %z').timestamp()
+        if email_datetime < since_timestamp:
+            pass
+            return None
 
+        text_part = msg.get_body(preferencelist=('plain',))
+        content = text_part.get_content() if text_part else msg.get_content()
 
         return {
             "from": from_header,
             "to": to_header,
-            "text": body
+            "date": date_header,
+            "subject": subject_header,
+            "content": content
         }
+    
+    def wait_for_new_message(self, delay=5, timeout=60):
+        start_time = time.time()
 
-    def __del__(self):
-        self.mail.logout()
+        while time.time() - start_time <= timeout:
+            try:
+                email = self.fetch_emails(start_time)
+                if email is not None:
+                    return email
+            except:
+                pass
+            time.sleep(delay)
 
-
-
+        return None
