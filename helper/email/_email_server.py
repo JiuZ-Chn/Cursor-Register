@@ -1,4 +1,3 @@
-import time
 import copy
 from DrissionPage import Chromium
 
