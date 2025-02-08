@@ -1,8 +1,9 @@
 import time
 from DrissionPage import Chromium
 
-class Minuteinboxcom:
+from ._email_server import EmailServer
 
+class Minuteinboxcom(EmailServer):
     MINUTEINBOX_COM_URL = "https://www.minuteinbox.com/"
 
     def __init__(self, browser: Chromium):
@@ -28,7 +29,7 @@ class Minuteinboxcom:
         
         return email_address
         
-    def wait_for_message(self, delay=5, timeout=60):
+    def wait_for_new_message(self, delay=5, timeout=60):
         start_time = time.time()
 
         while time.time() - start_time <= timeout:
@@ -36,14 +37,14 @@ class Minuteinboxcom:
                 self.tab.refresh()
                 self.tab.ele("xpath=//span[contains(text(), 'Cursor')]").click()
                 layout = self.tab.ele("xpath=//div[@class='base-layout-root']")
-                
+
                 return {
                     "text": layout.text
                 }
             except:
                 pass
+            
             self.tab.wait(delay)
-
         return None
 
 if __name__ == "__main__":
