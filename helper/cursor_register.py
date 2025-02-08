@@ -88,6 +88,10 @@ class CursorRegister:
                 print(f"[Register][{self.thread_id}] Continue to email code page")
                 break
 
+            if tab.wait.eles_loaded("xpath=//p[contains(text(), 'Authentication blocked, please contact your admin')]", timeout=3):
+                print(f"[Register][{self.thread_id}][Error] Authentication blocked, please contact your admin.")
+                return tab, False
+
             if tab.wait.eles_loaded("xpath=//div[contains(text(), 'Sign up is restricted.')]", timeout=3):
                 print(f"[Register][{self.thread_id}][Error] Sign up is restricted.")
                 return tab, False
@@ -285,7 +289,7 @@ class CursorRegister:
             message = email_data["text"]
             message = message.replace(" ", "")
             verify_code = re.search(r'(?:\r?\n)(\d{6})(?:\r?\n)', message).group(1)
-            
+
         return verify_code
 
     def get_cursor_cookie(self, tab):
