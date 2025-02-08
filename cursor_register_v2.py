@@ -35,23 +35,25 @@ class CursorRegister:
     def __init__(self, 
                  browser: Chromium,
                  email_server: EmailServer = None):
+
         self.browser = browser
         self.email_server = email_server
+        self.email_queue = queue.Queue()
+        self.email_thread = None
 
         self.thread_id = threading.current_thread().ident
         self.retry_times = 5
+        if self.email_server is not None:
+            self.email_thread = threading.Thread(target=self.email_server.wait_for_new_message_thread,
+                                                 args=(self.email_queue, ), 
+                                                 daemon=True)
 
     def sign_in(self, email, password = None):
 
-        mail = Minuteinboxcom(self.browser)
-        self.email_server = mail
-        email = mail.get_email_address()
-
-        email_queue = queue.Queue()
-        email_thread = threading.Thread(target=self._wait_for_new_message,
-                                        args=(email_queue, ), 
-                                        daemon=True)
-        email_thread.start()
+        assert any(x is not None for x in (self.email_thread, password)), "Should provide email server or password. At least one of them."
+ 
+        if self.email_server is not None:
+            self.email_thread.start()
 
         tab = self.browser.new_tab(CURSOR_SIGNIN_URL)
         # Input email
@@ -79,7 +81,7 @@ class CursorRegister:
             # Kill the function since time out 
             if retry == self.retry_times - 1:
                 print(f"[Register][{self.thread_id}] Timeout when inputing email address")
-                return None
+                return tab, False
 
         # Use email sign-in code in password page
         for retry in range(self.retry_times):
@@ -104,28 +106,28 @@ class CursorRegister:
 
             if tab.wait.eles_loaded("xpath=//div[contains(text(), 'Sign up is restricted.')]", timeout=3):
                 print(f"[Register][{self.thread_id}][Error] Sign up is restricted.")
-                return None
+                return tab, False
 
             tab.refresh()
             # Kill the function since time out 
             if retry == self.retry_times - 1:
                 if enable_register_log: print(f"[Register][{self.thread_id}] Timeout when inputing password")
-                return None
+                return tab, False
 
         # Get email verification code
         try:
             verify_code = None
 
-            data = email_queue.get(timeout=60)
-            message = data.get("text", None)
+            data = self.email_queue.get(timeout=60)
+            message = data.get("content", None)
             assert None not in [data, message], "Fail to get email."
 
             message = message.replace(" ", "")
             verify_code = re.search(r'(?:\r?\n)(\d{6})(?:\r?\n)', message).group(1)
-            assert verify_code is not None, "Fail to get code from email."
+            assert verify_code is not None, "Fail to parse code from email."
         except Exception as e:
-            print(f"[Register][{self.thread_id}] Fail to get code from email.")
-            return None
+            print(f"[Register][{self.thread_id}] Fail to get code from email. Error: {e}")
+            return tab, False
 
         # Input email verification code
         for retry in range(self.retry_times):
@@ -152,27 +154,9 @@ class CursorRegister:
             # Kill the function since time out 
             if retry == self.retry_times - 1:
                 if enable_register_log: print(f"[Register][{self.thread_id}] Timeout when inputing email verification code")
-                return None
+                return tab, False
 
-        # Get cookie
-        try:
-            cookies = tab.cookies().as_dict()
-        except e:
-            print(f"[Register][{self.thread_id}] Fail to get cookie.")
-            return None
-
-        token = cookies.get('WorkosCursorSessionToken', None)
-        if enable_register_log:
-            if token is not None:
-                print(f"[Register][{self.thread_id}] Register Account Successfully.")
-            else:
-                print(f"[Register][{self.thread_id}] Register Account Failed.")
-
-        if not hide_account_info:
-            print(f"[Register] Cursor Email: {email}")
-            print(f"[Register] Cursor Token: {token}")
-
-        return tab
+        return tab, True
 
     def sign_up(self, browser):
 
@@ -369,14 +353,7 @@ class CursorRegister:
             if retry == retry_times - 1:
                 print("[Register] Timeout when passing turnstile")
 
-    def _wait_for_new_message(self, queue, timeout=300):
-        try:
-            data = self.email_server.wait_for_message(delay=1, timeout=timeout)
-            queue.put(copy.deepcopy(data))
-        except Exception as e:
-            queue.put(None)
-
-def register_pipeline(options):
+def register_cursor_core(options):
 
     try:
         # Maybe fail to open the browser
@@ -385,20 +362,23 @@ def register_pipeline(options):
         print(e)
         return None
 
-    register = CursorRegister(browser)    
-    #email_address = register.email_server.get_email_address()
-        
-    #account_infos = sign_in(browser)
-    tab_signin = register.sign_in("email_address")
+    email_server = Minuteinboxcom(browser)
+    email = email_server.get_email_address()
+
+    register = CursorRegister(browser, email_server)
+    tab_signin, status = register.sign_in(email)
+
     token = register.get_cursor_cookie(tab_signin)
 
-    register.browser.quit(force=True, del_data=True)
+    if status or not enable_browser_log:
+        register.browser.quit(force=True, del_data=True)
 
-    #if not hide_account_info:
-    #    print(f"[Register] Cursor Email: {"email"}")
-    #    print(f"[Register] Cursor Token: {token}")
+    if not hide_account_info:
+        print(f"[Register] Cursor Email: {email}")
+        print(f"[Register] Cursor Token: {token}")
 
     return {
+        "username": email,
         "token": token
     }
 
@@ -427,7 +407,7 @@ def register_cursor(number, max_workers):
     # Run the code using multithreading
     results = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = [executor.submit(register_pipeline, copy.deepcopy(options)) for _ in range(number)]
+        futures = [executor.submit(register_cursor_core, copy.deepcopy(options)) for _ in range(number)]
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
             if result is not None:
@@ -492,5 +472,6 @@ if __name__ == "__main__":
             response = oneapi.add_channel("Cursor",
                                           oneapi_channel_url,
                                           '\n'.join(batch),
-                                          Cursor.models)
+                                          Cursor.models,
+                                          tags = "Cursor")
             print(f'[OneAPI] Add Channel Request For Batch {idx}. Status Code: {response.status_code}, Response Body: {response.json()}')
