@@ -8,9 +8,10 @@ import threading
 import concurrent.futures
 from faker import Faker
 from datetime import datetime
-
 from DrissionPage import ChromiumOptions, Chromium
+
 from temp_mails import Tempmail_io, Guerillamail_com
+from helper.email.temp_mails_wrapper import TempMailsWrapper
 from helper.email.minuteinbox_com import Minuteinboxcom
 from helper.email import EmailServer
 
@@ -40,16 +41,15 @@ class CursorRegister:
 
         self.thread_id = threading.current_thread().ident
         self.retry_times = 5
+
+    def sign_in(self, email, password = None):
+
+        assert any(x is not None for x in (self.email_server, password)), "Should provide email server or password. At least one of them."
+ 
         if self.email_server is not None:
             self.email_thread = threading.Thread(target=self.email_server.wait_for_new_message_thread,
                                                  args=(self.email_queue, ), 
                                                  daemon=True)
-
-    def sign_in(self, email, password = None):
-
-        assert any(x is not None for x in (self.email_thread, password)), "Should provide email server or password. At least one of them."
- 
-        if self.email_server is not None:
             self.email_thread.start()
 
         tab = self.browser.new_tab(self.CURSOR_SIGNIN_URL)
@@ -156,92 +156,82 @@ class CursorRegister:
 
         return tab, True
 
-    def sign_up(self, browser):
+    def sign_up(self, email, password = None):
 
-        def _wait_for_new_email_thread(mail, queue, timeout=300):
-            try:
-                data = mail.wait_for_new_email(delay=1, timeout=timeout)
-                queue.put(copy.deepcopy(data))
-            except Exception as e:
-                queue.put(None)
+        assert self.email_server is not None, "Should provide email server."
+ 
+        if self.email_server is not None:
+            self.email_thread = threading.Thread(target=self.email_server.wait_for_new_message_thread,
+                                                 args=(self.email_queue, ), 
+                                                 daemon=True)
+            self.email_thread.start()
 
-        fake = Faker()
-        retry_times = 5
-        thread_id = threading.current_thread().ident
+        if password is None:
+            fake = Faker()
+            password = fake.password(length=12, special_chars=True, digits=True, upper_case=True, lower_case=True)
 
-        mail = Guerillamail_com()
-        email = mail.email
-        password = fake.password(length=12, special_chars=True, digits=True, upper_case=True, lower_case=True)
-
-        email_queue = queue.Queue()
-        email_thread = threading.Thread(target=_wait_for_new_email_thread,
-                                        args=(mail, email_queue, ), 
-                                        daemon=True)
-        email_thread.start()
-
-        tab = browser.new_tab(self.CURSOR_SIGNUP_URL)
+        tab = self.browser.new_tab(self.CURSOR_SIGNUP_URL)
         # Input email
-        for retry in range(retry_times):
+        for retry in range(self.retry_times):
             try:
-                if enable_register_log: print(f"[Register][{thread_id}][{retry}] Input email")
+                if enable_register_log: print(f"[Register][{self.thread_id}][{retry}] Input email")
                 tab.ele("xpath=//input[@name='email']").input(email, clear=True)
                 tab.ele("@type=submit").click()
 
                 # If not in password page, try pass turnstile page
                 if not tab.wait.url_change(self.CURSOR_SIGNUP_PASSWORD_URL, timeout=3) and self.CURSOR_SIGNUP_URL in tab.url:
-                    if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for email page")
+                    if enable_register_log: print(f"[Register][{self.thread_id}][{retry}] Try pass Turnstile for email page")
                     self._cursor_turnstile(tab)
 
             except Exception as e:
-                print(f"[Register][{thread_id}] Exception when handlding email page.")
+                print(f"[Register][{self.thread_id}] Exception when handlding email page.")
                 print(e)
 
             # In password page or data is validated, continue to next page
             if tab.wait.url_change(self.CURSOR_SIGNUP_PASSWORD_URL, timeout=5):
-                print(f"[Register][{thread_id}] Continue to password page")
+                print(f"[Register][{self.thread_id}] Continue to password page")
                 break
 
             tab.refresh()
             # Kill the function since time out 
-            if retry == retry_times - 1:
-                print(f"[Register][{thread_id}] Timeout when inputing email address")
-                if not enable_browser_log: browser.quit(force=True, del_data=True)
-                return None
+            if retry == self.retry_times - 1:
+                print(f"[Register][{self.thread_id}] Timeout when inputing email address")
+                return tab, False
 
         # Use email sign-in code in password page
-        for retry in range(retry_times):
+        for retry in range(self.retry_times):
             try:
-                if enable_register_log: print(f"[Register][{thread_id}][{retry}] Input password")
+                if enable_register_log: print(f"[Register][{self.thread_id}][{retry}] Input password")
                 tab.ele("xpath=//input[@name='password']").input(password, clear=True)
                 tab.ele('@type=submit').click()
 
                 # If not in verification code page, try pass turnstile page
                 if not tab.wait.url_change(self.CURSOR_EMAIL_VERIFICATION_URL, timeout=3) and self.CURSOR_SIGNUP_PASSWORD_URL in tab.url:
-                    if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for password page")
+                    if enable_register_log: print(f"[Register][{self.thread_id}][{retry}] Try pass Turnstile for password page")
                     self._cursor_turnstile(tab)
 
             except Exception as e:
-                print(f"[Register][{thread_id}] Exception when handling password page.")
+                print(f"[Register][{self.thread_id}] Exception when handling password page.")
                 print(e)
 
             # In code verification page or data is validated, continue to next page
             if tab.wait.url_change(self.CURSOR_EMAIL_VERIFICATION_URL, timeout=5):
-                print(f"[Register][{thread_id}] Continue to email code page")
+                print(f"[Register][{self.thread_id}] Continue to email code page")
                 break
 
             if tab.wait.eles_loaded("xpath=//div[contains(text(), 'Sign up is restricted.')]", timeout=3):
-                print(f"[Register][{thread_id}][Error] Sign up is restricted.")
-                return None
+                print(f"[Register][{self.thread_id}][Error] Sign up is restricted.")
+                return tab, False
 
             tab.refresh()
             # Kill the function since time out 
-            if retry == retry_times - 1:
-                if enable_register_log: print(f"[Register][{thread_id}] Timeout when inputing password")
-                return None
+            if retry == self.retry_times - 1:
+                if enable_register_log: print(f"[Register][{self.thread_id}] Timeout when inputing password")
+                return tab, False
 
         # Get email verification code
         try:
-            data = email_queue.get(timeout=60)
+            data = self.email_queue.get(timeout=60)
             assert data is not None, "Fail to get code from email."
 
             verify_code = None
@@ -263,25 +253,25 @@ class CursorRegister:
             assert verify_code is not None, "Fail to get code from email."
 
         except Exception as e:
-            print(f"[Register][{thread_id}] Fail to get code from email.")
-            return None
+            print(f"[Register][{self.thread_id}] Fail to get code from email.")
+            return tab, False
 
         # Input email verification code
-        for retry in range(retry_times):
+        for retry in range(self.retry_times):
             try:
-                if enable_register_log: print(f"[Register][{thread_id}][{retry}] Input email verification code")
+                if enable_register_log: print(f"[Register][{self.thread_id}][{retry}] Input email verification code")
 
                 for idx, digit in enumerate(verify_code, start = 0):
                     tab.ele(f"xpath=//input[@data-index={idx}]").input(digit, clear=True)
                     tab.wait(0.1, 0.3)
                 tab.wait(0.5, 1.5)
 
-                if not tab.wait.url_change(self.CURSOR_URL, timeout=3) and self.CURSOR_MAGAIC_CODE_URL in tab.url:
-                    if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for email code page.")
+                if not tab.wait.url_change(self.CURSOR_URL, timeout=3) and self.CURSOR_EMAIL_VERIFICATION_URL in tab.url:
+                    if enable_register_log: print(f"[Register][{self.thread_id}][{retry}] Try pass Turnstile for email code page.")
                     self._cursor_turnstile(tab)
 
             except Exception as e:
-                print(f"[Register][{thread_id}] Exception when handling email code page.")
+                print(f"[Register][{self.thread_id}] Exception when handling email code page.")
                 print(e)
 
             if tab.wait.url_change(self.CURSOR_URL, timeout=3):
@@ -289,33 +279,11 @@ class CursorRegister:
 
             tab.refresh()
             # Kill the function since time out 
-            if retry == retry_times - 1:
-                if enable_register_log: print(f"[Register][{thread_id}] Timeout when inputing email verification code")
-                return None
+            if retry == self.retry_times - 1:
+                if enable_register_log: print(f"[Register][{self.thread_id}] Timeout when inputing email verification code")
+                return tab, False
 
-        # Get cookie
-        try:
-            cookies = tab.cookies().as_dict()
-        except e:
-            print(f"[Register][{thread_id}] Fail to get cookie.")
-            if not enable_browser_log: browser.quit(force=True, del_data=True)
-            return None
-
-        token = cookies.get('WorkosCursorSessionToken', None)
-        if enable_register_log:
-            if token is not None:
-                print(f"[Register][{thread_id}] Register Account Successfully.")
-            else:
-                print(f"[Register][{thread_id}] Register Account Failed.")
-
-        if not hide_account_info:
-            print(f"[Register] Cursor Email: {email}")
-            print(f"[Register] Cursor Token: {token}")
-
-        return {
-            'username': email,
-            'token': token
-        }
+        return tab, True
 
     # tab: A tab has signed in 
     def delete_account(self, tab):
@@ -360,11 +328,18 @@ def register_cursor_core(options):
         print(e)
         return None
 
+    # Opiton 1: Use temp_mails library
+    #temp_email = Guerillamail_com()
+    #email_server = TempMailsWrapper(temp_email)
+    # Option 2: Use custom email server
     email_server = Minuteinboxcom(browser)
+
+    # Get email address
     email = email_server.get_email_address()
 
     register = CursorRegister(browser, email_server)
-    tab_signin, status = register.sign_in(email)
+    #tab_signin, status = register.sign_in(email)
+    tab_signin, status = register.sign_up(email)
 
     token = register.get_cursor_cookie(tab_signin)
 
