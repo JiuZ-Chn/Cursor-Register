@@ -31,10 +31,10 @@ def register_cursor_core(options):
         return None
 
     # Opiton 1: Use temp_mails library
-    #temp_email = Guerillamail_com()
-    #email_server = TempMailsWrapper(temp_email)
+    temp_email = Guerillamail_com()
+    email_server = TempMailsWrapper(temp_email)
     # Option 2: Use custom email server
-    email_server = Minuteinboxcom(browser)
+    #email_server = Minuteinboxcom(browser)
 
     # Get email address
     email = email_server.get_email_address()
