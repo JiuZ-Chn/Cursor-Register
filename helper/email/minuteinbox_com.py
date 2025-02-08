@@ -39,7 +39,7 @@ class Minuteinboxcom(EmailServer):
                 layout = self.tab.ele("xpath=//div[@class='base-layout-root']")
 
                 return {
-                    "text": layout.text
+                    "content": layout.text
                 }
             except:
                 pass
