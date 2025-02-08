@@ -1,9 +1,9 @@
 import time
-
 from DrissionPage import Chromium
 
-class Gmailpm:
+from ._email_server import EmailServer
 
+class Gmailpm(EmailServer):
     GMAIL_PM_URL = "https://gmail.pm/"
 
     def __init__(self, browser: Chromium):
@@ -25,7 +25,7 @@ class Gmailpm:
         
         return email_address
         
-    def wait_for_message(self, delay=5, timeout=60):
+    def wait_for_new_message(self, delay=5, timeout=60):
         start_time = time.time()
 
         while time.time() - start_time <= timeout:
@@ -37,11 +37,10 @@ class Gmailpm:
                     content = self.tab.ele("xpath=//div[@class='content'][title]")
 
                     return {
-                        "text": content.text
+                        "content": content.text
                     }
             except:
                 pass
             
             self.tab.wait(delay)
-
         return None
