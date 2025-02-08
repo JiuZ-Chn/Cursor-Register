@@ -111,7 +111,7 @@ class CursorRegister:
                 verify_code = re.search(r'(?:\r?\n)(\d{6})(?:\r?\n)', message).group(1)
             assert verify_code is not None, "Fail to parse code from email."
         except Exception as e:
-            print(f"[Register][{self.thread_id}] Fail to get code from email. Error: {e}")
+            print(f"[Register][{self.thread_id}] Fail to get code from email.")
             return tab, False
 
         # Input email verification code
