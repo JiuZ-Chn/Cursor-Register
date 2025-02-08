@@ -48,7 +48,7 @@ def register_cursor_core(options):
     if status or not enable_browser_log:
         register.browser.quit(force=True, del_data=True)
 
-    if not hide_account_info:
+    if status and not hide_account_info:
         print(f"[Register] Cursor Email: {email}")
         print(f"[Register] Cursor Token: {token}")
 
