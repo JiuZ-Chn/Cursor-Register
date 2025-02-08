@@ -375,10 +375,12 @@ def register_cursor_core(options):
         print(f"[Register] Cursor Email: {email}")
         print(f"[Register] Cursor Token: {token}")
 
-    return {
+    ret = {
         "username": email,
         "token": token
     }
+
+    return ret
 
 def register_cursor(number, max_workers):
 
