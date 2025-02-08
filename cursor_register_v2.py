@@ -14,16 +14,6 @@ from temp_mails import Tempmail_io, Guerillamail_com
 from helper.email.minuteinbox_com import Minuteinboxcom
 from helper.email import EmailServer
 
-CURSOR_URL = "https://www.cursor.com/"
-CURSOR_SIGNIN_URL = "https://authenticator.cursor.sh"
-CURSOR_PASSWORD_URL = "https://authenticator.cursor.sh/password"
-CURSOR_MAGAIC_CODE_URL = "https://authenticator.cursor.sh/magic-code"
-CURSOR_SIGNUP_URL =  "https://authenticator.cursor.sh/sign-up"
-CURSOR_SIGNUP_PASSWORD_URL = "https://authenticator.cursor.sh/sign-up/password"
-CURSOR_EMAIL_VERIFICATION_URL = "https://authenticator.cursor.sh/email-verification"
-
-CURSOR_SETTINGS_URL = "https://www.cursor.com/settings"
-
 # Parameters for debugging purpose
 hide_account_info = os.getenv('HIDE_ACCOUNT_INFO', 'false').lower() == 'true'
 enable_register_log = True
@@ -31,6 +21,13 @@ enable_headless = os.getenv('ENABLE_HEADLESS', 'false').lower() == 'true'
 enable_browser_log = os.getenv('ENABLE_BROWSER_LOG', 'true').lower() == 'true' or not enable_headless
 
 class CursorRegister:
+    CURSOR_URL = "https://www.cursor.com/"
+    CURSOR_SIGNIN_URL = "https://authenticator.cursor.sh"
+    CURSOR_PASSWORD_URL = "https://authenticator.cursor.sh/password"
+    CURSOR_MAGAIC_CODE_URL = "https://authenticator.cursor.sh/magic-code"
+    CURSOR_SIGNUP_URL =  "https://authenticator.cursor.sh/sign-up"
+    CURSOR_SIGNUP_PASSWORD_URL = "https://authenticator.cursor.sh/sign-up/password"
+    CURSOR_EMAIL_VERIFICATION_URL = "https://authenticator.cursor.sh/email-verification"
 
     def __init__(self, 
                  browser: Chromium,
@@ -55,7 +52,7 @@ class CursorRegister:
         if self.email_server is not None:
             self.email_thread.start()
 
-        tab = self.browser.new_tab(CURSOR_SIGNIN_URL)
+        tab = self.browser.new_tab(self.CURSOR_SIGNIN_URL)
         # Input email
         for retry in range(self.retry_times):
             try:
@@ -64,7 +61,7 @@ class CursorRegister:
                 tab.ele("@type=submit").click()
 
                 # If not in password page, try pass turnstile page
-                if not tab.wait.url_change(CURSOR_PASSWORD_URL, timeout=3) and CURSOR_SIGNIN_URL in tab.url:
+                if not tab.wait.url_change(self.CURSOR_PASSWORD_URL, timeout=3) and self.CURSOR_SIGNIN_URL in tab.url:
                     if enable_register_log: print(f"[Register][{self.thread_id}][{retry}] Try pass Turnstile for email page")
                     self._cursor_turnstile(tab)
 
@@ -73,7 +70,7 @@ class CursorRegister:
                 print(e)
 
             # In password page or data is validated, continue to next page
-            if tab.wait.url_change(CURSOR_PASSWORD_URL, timeout=5):
+            if tab.wait.url_change(self.CURSOR_PASSWORD_URL, timeout=5):
                 print(f"[Register][{self.thread_id}] Continue to password page")
                 break
 
@@ -91,7 +88,7 @@ class CursorRegister:
                     tab.ele("xpath=//button[@value='magic-code']").click()
 
                 # If not in verification code page, try pass turnstile page
-                if not tab.wait.url_change(CURSOR_MAGAIC_CODE_URL, timeout=3) and CURSOR_PASSWORD_URL in tab.url:
+                if not tab.wait.url_change(self.CURSOR_MAGAIC_CODE_URL, timeout=3) and self.CURSOR_PASSWORD_URL in tab.url:
                     if enable_register_log: print(f"[Register][{self.thread_id}][{retry}] Try pass Turnstile for password page")
                     self._cursor_turnstile(tab)
 
@@ -100,7 +97,7 @@ class CursorRegister:
                 print(e)
 
             # In code verification page or data is validated, continue to next page
-            if tab.wait.url_change(CURSOR_MAGAIC_CODE_URL, timeout=5):
+            if tab.wait.url_change(self.CURSOR_MAGAIC_CODE_URL, timeout=5):
                 print(f"[Register][{self.thread_id}] Continue to email code page")
                 break
 
@@ -119,11 +116,12 @@ class CursorRegister:
             verify_code = None
 
             data = self.email_queue.get(timeout=60)
-            message = data.get("content", None)
-            assert None not in [data, message], "Fail to get email."
+            assert data is not None, "Fail to get code from email."
 
-            message = message.replace(" ", "")
-            verify_code = re.search(r'(?:\r?\n)(\d{6})(?:\r?\n)', message).group(1)
+            if "content" in data:
+                message = data["content"]
+                message = message.replace(" ", "")
+                verify_code = re.search(r'(?:\r?\n)(\d{6})(?:\r?\n)', message).group(1)
             assert verify_code is not None, "Fail to parse code from email."
         except Exception as e:
             print(f"[Register][{self.thread_id}] Fail to get code from email. Error: {e}")
@@ -139,7 +137,7 @@ class CursorRegister:
                     tab.wait(0.1, 0.3)
                 tab.wait(0.5, 1.5)
 
-                if not tab.wait.url_change(CURSOR_URL, timeout=3) and CURSOR_MAGAIC_CODE_URL in tab.url:
+                if not tab.wait.url_change(self.CURSOR_URL, timeout=3) and self.CURSOR_MAGAIC_CODE_URL in tab.url:
                     if enable_register_log: print(f"[Register][{self.thread_id}][{retry}] Try pass Turnstile for email code page.")
                     self._cursor_turnstile(tab)
 
@@ -147,7 +145,7 @@ class CursorRegister:
                 print(f"[Register][{self.thread_id}] Exception when handling email code page.")
                 print(e)
 
-            if tab.wait.url_change(CURSOR_URL, timeout=3):
+            if tab.wait.url_change(self.CURSOR_URL, timeout=3):
                 break
 
             tab.refresh()
@@ -181,7 +179,7 @@ class CursorRegister:
                                         daemon=True)
         email_thread.start()
 
-        tab = browser.new_tab(CURSOR_SIGNUP_URL)
+        tab = browser.new_tab(self.CURSOR_SIGNUP_URL)
         # Input email
         for retry in range(retry_times):
             try:
@@ -190,7 +188,7 @@ class CursorRegister:
                 tab.ele("@type=submit").click()
 
                 # If not in password page, try pass turnstile page
-                if not tab.wait.url_change(CURSOR_SIGNUP_PASSWORD_URL, timeout=3) and CURSOR_SIGNUP_URL in tab.url:
+                if not tab.wait.url_change(self.CURSOR_SIGNUP_PASSWORD_URL, timeout=3) and self.CURSOR_SIGNUP_URL in tab.url:
                     if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for email page")
                     self._cursor_turnstile(tab)
 
@@ -199,7 +197,7 @@ class CursorRegister:
                 print(e)
 
             # In password page or data is validated, continue to next page
-            if tab.wait.url_change(CURSOR_SIGNUP_PASSWORD_URL, timeout=5):
+            if tab.wait.url_change(self.CURSOR_SIGNUP_PASSWORD_URL, timeout=5):
                 print(f"[Register][{thread_id}] Continue to password page")
                 break
 
@@ -218,7 +216,7 @@ class CursorRegister:
                 tab.ele('@type=submit').click()
 
                 # If not in verification code page, try pass turnstile page
-                if not tab.wait.url_change(CURSOR_EMAIL_VERIFICATION_URL, timeout=3) and CURSOR_SIGNUP_PASSWORD_URL in tab.url:
+                if not tab.wait.url_change(self.CURSOR_EMAIL_VERIFICATION_URL, timeout=3) and self.CURSOR_SIGNUP_PASSWORD_URL in tab.url:
                     if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for password page")
                     self._cursor_turnstile(tab)
 
@@ -227,7 +225,7 @@ class CursorRegister:
                 print(e)
 
             # In code verification page or data is validated, continue to next page
-            if tab.wait.url_change(CURSOR_EMAIL_VERIFICATION_URL, timeout=5):
+            if tab.wait.url_change(self.CURSOR_EMAIL_VERIFICATION_URL, timeout=5):
                 print(f"[Register][{thread_id}] Continue to email code page")
                 break
 
@@ -278,7 +276,7 @@ class CursorRegister:
                     tab.wait(0.1, 0.3)
                 tab.wait(0.5, 1.5)
 
-                if not tab.wait.url_change(CURSOR_URL, timeout=3) and CURSOR_MAGAIC_CODE_URL in tab.url:
+                if not tab.wait.url_change(self.CURSOR_URL, timeout=3) and self.CURSOR_MAGAIC_CODE_URL in tab.url:
                     if enable_register_log: print(f"[Register][{thread_id}][{retry}] Try pass Turnstile for email code page.")
                     self._cursor_turnstile(tab)
 
@@ -286,7 +284,7 @@ class CursorRegister:
                 print(f"[Register][{thread_id}] Exception when handling email code page.")
                 print(e)
 
-            if tab.wait.url_change(CURSOR_URL, timeout=3):
+            if tab.wait.url_change(self.CURSOR_URL, timeout=3):
                 break
 
             tab.refresh()
