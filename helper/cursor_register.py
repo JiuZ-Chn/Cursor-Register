@@ -105,10 +105,7 @@ class CursorRegister:
             data = self.email_queue.get(timeout=60)
             assert data is not None, "Fail to get code from email."
 
-            if "content" in data:
-                message = data["content"]
-                message = message.replace(" ", "")
-                verify_code = re.search(r'(?:\r?\n)(\d{6})(?:\r?\n)', message).group(1)
+            verify_code = self.parse_cursor_verification_code(data)
             assert verify_code is not None, "Fail to parse code from email."
         except Exception as e:
             print(f"[Register][{self.thread_id}] Fail to get code from email.")
@@ -275,6 +272,21 @@ class CursorRegister:
     # tab: A tab has signed in 
     def delete_account(self, tab):
         pass
+
+    def parse_cursor_verification_code(self, email_data):
+        message = ""
+        verify_code = None
+
+        if "content" in email_data:
+            message = email_data["content"]
+            message = message.replace(" ", "")
+            verify_code = re.search(r'(?:\r?\n)(\d{6})(?:\r?\n)', message).group(1)
+        elif "text" in email_data:
+            message = email_data["text"]
+            message = message.replace(" ", "")
+            verify_code = re.search(r'(?:\r?\n)(\d{6})(?:\r?\n)', message).group(1)
+            
+        return verify_code
 
     def get_cursor_cookie(self, tab):
         try:
