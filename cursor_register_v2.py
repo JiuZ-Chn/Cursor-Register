@@ -25,7 +25,7 @@ class CursorRegister:
     CURSOR_SIGNIN_URL = "https://authenticator.cursor.sh"
     CURSOR_PASSWORD_URL = "https://authenticator.cursor.sh/password"
     CURSOR_MAGAIC_CODE_URL = "https://authenticator.cursor.sh/magic-code"
-    CURSOR_SIGNUP_URL =  "https://authenticator.cursor.sh/sign-up"
+    CURSOR_SIGNUP_URL = "https://authenticator.cursor.sh/sign-up"
     CURSOR_SIGNUP_PASSWORD_URL = "https://authenticator.cursor.sh/sign-up/password"
     CURSOR_EMAIL_VERIFICATION_URL = "https://authenticator.cursor.sh/email-verification"
 
