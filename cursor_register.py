@@ -111,10 +111,8 @@ def register_cursor(number, max_workers):
 
     return results
 
-@hydra.main(config_path="config", config_name="config")
+@hydra.main(config_path="config", config_name="config", version_base=None)
 def main(config: DictConfig):
-    print(config)
-
     number = config.register.number
     max_workers = config.register.max_workers
     print(f"[Register] Start to register {number} accounts in {max_workers} threads")
