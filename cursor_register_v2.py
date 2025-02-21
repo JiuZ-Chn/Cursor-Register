@@ -1,13 +1,12 @@
 import os
-import re
 import csv
 import copy
-import queue
 import argparse
-import threading
 import concurrent.futures
+import hydra
 from faker import Faker
 from datetime import datetime
+from omegaconf import DictConfig
 from DrissionPage import ChromiumOptions, Chromium
 
 from temp_mails import Tempmail_io, Guerillamail_com
@@ -65,7 +64,8 @@ def register_cursor(number, max_workers):
     options.auto_port()
     options.new_env()
     # Use turnstilePatch from https://github.com/TheFalloutOf76/CDP-bug-MouseEvent-.screenX-.screenY-patcher
-    options.add_extension("turnstilePatch")
+    turnstile_patch_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "turnstilePatch"))
+    options.add_extension(turnstile_patch_path)
 
     # If fail to pass the cloudflare in headless mode, try to align the user agent with your real browser
     if enable_headless: 
@@ -111,44 +111,38 @@ def register_cursor(number, max_workers):
 
     return results
 
-if __name__ == "__main__":
+@hydra.main(config_path="config", config_name="config")
+def main(config: DictConfig):
+    print(config)
 
-    parser = argparse.ArgumentParser(description='Cursor Registor')
-    parser.add_argument('--number', type=int, default=2, help="How many account you want")
-    parser.add_argument('--max_workers', type=int, default=1, help="How many workers in multithreading")
-    
-    # The parameters with name starts with oneapi are used to uploead the cookie token to one-api, new-api, chat-api server.
-    parser.add_argument('--oneapi', action='store_true', help='Enable One-API or not')
-    parser.add_argument('--oneapi_url', type=str, required=False, help='URL link for One-API website')
-    parser.add_argument('--oneapi_token', type=str, required=False, help='Token for One-API website')
-    parser.add_argument('--oneapi_channel_url', type=str, required=False, help='Base url for One-API channel')
-
-    args = parser.parse_args()
-    number = args.number
-    max_workers = args.max_workers
-    use_oneapi = args.oneapi
-    oneapi_url = args.oneapi_url
-    oneapi_token = args.oneapi_token
-    oneapi_channel_url = args.oneapi_channel_url
-
+    number = config.register.number
+    max_workers = config.register.max_workers
     print(f"[Register] Start to register {number} accounts in {max_workers} threads")
+
     account_infos = register_cursor(number, max_workers)
     tokens = list(set([row['token'] for row in account_infos]))
     print(f"[Register] Register {len(tokens)} accounts successfully")
     
-    if use_oneapi and len(account_infos) > 0:
+    if config.oneapi.enabled and len(account_infos) > 0:
         from tokenManager.oneapi_manager import OneAPIManager
         from tokenManager.cursor import Cursor
-        oneapi = OneAPIManager(oneapi_url, oneapi_token)
 
+        oneapi_url = config.oneapi.url
+        oneapi_token = config.oneapi.token
+        oneapi_channel_url = config.oneapi.channel_url
+
+        oneapi = OneAPIManager(oneapi_url, oneapi_token)
         # Send request by batch to avoid "Too many SQL variables" error in SQLite.
         # If you use MySQL, better to set the batch_size as len(tokens)
         batch_size = 10
         for idx, i in enumerate(range(0, len(tokens), batch_size), start=1):
             batch = tokens[i:i + batch_size]
-            response = oneapi.add_channel("Cursor",
-                                          oneapi_channel_url,
-                                          '\n'.join(batch),
-                                          Cursor.models,
+            response = oneapi.add_channel(name = "Cursor",
+                                          base_url = oneapi_channel_url,
+                                          key = '\n'.join(batch),
+                                          models = Cursor.models,
                                           tags = "Cursor")
             print(f'[OneAPI] Add Channel Request For Batch {idx}. Status Code: {response.status_code}, Response Body: {response.json()}')
+
+if __name__ == "__main__":
+    main()
