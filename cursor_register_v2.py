@@ -13,7 +13,7 @@ from DrissionPage import ChromiumOptions, Chromium
 from temp_mails import Tempmail_io, Guerillamail_com
 from helper.cursor_register import CursorRegister
 from helper.email.temp_mails_wrapper import TempMailsWrapper
-from helper.email.gmail_pm import Gmailpm
+from helper.email.minuteinbox_com import Minuteinboxcom
 from helper.email import EmailServer
 
 # Parameters for debugging purpose
@@ -34,7 +34,7 @@ def register_cursor_core(options):
     #temp_email = Guerillamail_com()
     #email_server = TempMailsWrapper(temp_email)
     # Option 2: Use custom email server
-    email_server = Gmailpm(browser)
+    email_server = Minuteinboxcom(browser)
 
     # Get email address
     email = email_server.get_email_address()
