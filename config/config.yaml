@@ -1,0 +1,15 @@
+register:
+  number: 2
+  max_workers: 1
+
+imap:
+  imap_server: imap.qq.com
+  imap_port: 993
+  username: username
+  password: password
+
+oneapi:
+  enabled: false
+  url: http://localhost:3000
+  token: your_oneapi_token
+  channel_url: http://localhost:3010/
