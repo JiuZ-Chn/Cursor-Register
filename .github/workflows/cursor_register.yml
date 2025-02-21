@@ -36,7 +36,7 @@ jobs:
       - name: Run script for csv
         if: ${{ github.event.inputs.ingest_to_oneapi == 'false' && github.event.inputs.upload_artifact == 'true' }}
         run: |
-          python3 ./cursor_register_v2.py register.number=${{ github.event.inputs.number }} register.max_workers=${{ github.event.inputs.max_workers }} 
+          python3 ./cursor_register.py register.number=${{ github.event.inputs.number }} register.max_workers=${{ github.event.inputs.max_workers }} 
       - name: Upload csv files to artifact
         if: ${{ github.event.inputs.upload_artifact == 'true' }}
         uses: actions/upload-artifact@v4
