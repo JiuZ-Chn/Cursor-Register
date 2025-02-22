@@ -9,7 +9,7 @@ register:
     - email2@outlook.com
 
   temp_email_server:
-    temp_email_cls: Minuteinboxcom
+    name: Minuteinboxcom
 
   imap_email_server:
     imap_server: imap.qq.com
