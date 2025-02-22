@@ -6,16 +6,12 @@ import concurrent.futures
 import hydra
 from faker import Faker
 from datetime import datetime
-from omegaconf import DictConfig
+from omegaconf import OmegaConf, DictConfig
 from DrissionPage import ChromiumOptions, Chromium
 
 from temp_mails import Tempmail_io, Guerillamail_com
 from helper.cursor_register import CursorRegister
-from helper.email.temp_mails_wrapper import TempMailsWrapper
-from helper.email.gmail_pm import Gmailpm
-from helper.email.minuteinbox_com import Minuteinboxcom
-from helper.email.imap import Imap
-from helper.email import EmailServer
+from helper.email import *
 
 # Parameters for debugging purpose
 hide_account_info = os.getenv('HIDE_ACCOUNT_INFO', 'false').lower() == 'true'
@@ -31,16 +27,15 @@ def register_cursor_core(register_config, options):
         print(e)
         return None
     
-    email_server = None
-    if register_config.email_server == "temp_email_server":
-        email_server = eval(register_config.temp_email_server.temp_email_cls)(browser)
+    if register_config.email_server.name == "temp_email_server":
+        email_server = eval(register_config.temp_email_server.name)(browser)
         email_address = email_server.get_email_address()
-    elif register_config.email_server == "imap_email_server":
+    elif register_config.email_server.name == "imap_email_server":
         imap_server = register_config.imap_email_server.imap_server
         imap_port = register_config.imap_email_server.imap_port
         imap_username = register_config.imap_email_server.username
         imap_password = register_config.imap_email_server.password
-        email_address = register_config.register.email_server.email_address
+        email_address = register_config.email_server.email_address
         email_server = Imap(imap_server, imap_port, imap_username, imap_password, email_from = email_address)
 
     register = CursorRegister(browser, email_server)
@@ -96,9 +91,9 @@ def register_cursor(register_config):
         futures = []
         for idx in range(number):
             register_config_thread = copy.deepcopy(register_config)
-            use_custom_address = register_config.regitster.email_server.use_custom_address
-            custom_email_address = register_config.regitster.email_server.custom_email_address
-            register_config_thread.register.email_server.email_address = custom_email_address[idx] if use_custom_address else None
+            use_custom_address = register_config.email_server.use_custom_address
+            custom_email_address = register_config.email_server.custom_email_address
+            register_config_thread.email_server.email_address = custom_email_address[idx] if use_custom_address else None
             options_thread = copy.deepcopy(options)
             futures.append(executor.submit(register_cursor_core, register_config_thread, options_thread))
         for future in concurrent.futures.as_completed(futures):
@@ -126,14 +121,17 @@ def register_cursor(register_config):
 
 @hydra.main(config_path="config", config_name="config", version_base=None)
 def main(config: DictConfig):
+    OmegaConf.set_struct(config, False)
     # Validate the config
-    email_server_name = config.register.regitster.email_server.name
-    use_custom_address = config.register.regitster.email_server.use_custom_address
-    custom_email_address = config.register.regitster.email_server.custom_email_address
+    email_server_name = config.register.email_server.name
+    use_custom_address = config.register.email_server.use_custom_address
+    custom_email_address = config.register.email_server.custom_email_address
+    assert email_server_name in ["temp_email_server", "imap_email_server"], "email_server_name should be either temp_email_server or imap_email_server"
     assert use_custom_address and email_server_name == "imap_email_server" or not use_custom_address, "use_custom_address should be True only when email_server_name is imap_email_server"
     if use_custom_address and email_server_name == "imap_email_server":
         config.register.number = len(custom_email_address)
         print(f"[Register] Parameter regitser.number is overwritten by the length of custom_email_address: {len(custom_email_address)}")
+    
 
     account_infos = register_cursor(config.register)
     tokens = list(set([row['token'] for row in account_infos]))
