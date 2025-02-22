@@ -34,7 +34,7 @@ python cursor_register.py register.number=3
 
 ### Advanced configuration in `config/config.yaml`
 
-The `config.yaml` describe all the parameter for the account register. If you want to do advanced configuration, like IMAP or Chat-API, please edit the .yaml file for the parameter.
+The `config.yaml` describes all the parameters for the account register. If you want to do advanced configuration, like IMAP or Chat-API, please edit the .yaml file for the parameters.
 
 #### Basic register configuration
 ```
@@ -58,7 +58,7 @@ register:
 
 #### IMAP email server configuration
 
-When you use IMAP to revice the email verification code, you should edit the parameter for your IMAP account.
+When you use IMAP to receive the email verification code, you should edit the parameter for your IMAP account.
 
 ```
 register:
@@ -105,9 +105,7 @@ python tokenManager/oneapi_cursor_cleaner.py --oneapi_url {oneapi_url} --oneapi_
 - `disable_low_balance_accounts`: `True` or `False` to disable the low balance accounts in Chat-API
 - `delete_low_balance_accounts`: `True` or `False` to delete the low balance accounts in Chat-API
 
-## Run in Github Action
-
-## Introduction
+## Run Register in Github Action
 
 The Github Action pipeline **`Cursor Register`** provides the following parameter:
 - `number`: The account number you want to register.
@@ -127,18 +125,18 @@ Please run the Github Action pipeline **`Cursor Register`** with the following p
 
 ### Register accounts. Upload the account cookie token into [Chat-API](https://github.com/ai365vip/chat-api)
 
-Please add the folloing secret in your repo.
+Please add the following secret in your repo.
 
 - `CURSOR_ONEAPI_URL`: For parameter `oneapi.url`
-- `CURSOR_ONEAPI_TOKEN`: For parameter `oneapi_.oken`
+- `CURSOR_ONEAPI_TOKEN`: For parameter `oneapi.token`
 - `CURSOR_CHANNEL_URL`: For parameter `oneapi.channel_url`
 
 Please run the Github Action pipeline **`Cursor Register`** with the following parameter:
 - `Ingest account tokens to OneAPI`: Should be `☑`
 
-### Register accounts. Use IMAP server to revice the email
+### Register accounts. Use IMAP server to receivce the email
 
-Please add the folloing secret in your repo:
+Please add the following secret in your repo:
 
 - `CURSOR_IMAP_SERVER`: IMAP server
 - `CURSOR_IMAP_PORT`: IMAP port
