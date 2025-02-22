@@ -3,8 +3,8 @@ register:
   max_workers: 1
   email_server: 
     name: temp_email_server
-    use_custom_email: false
-    email_address: 
+    use_custom_address: false
+    custom_email_address: 
     - email1@outlook.com
     - email2@outlook.com
 
