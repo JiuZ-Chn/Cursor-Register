@@ -4,16 +4,21 @@ import email
 from email.policy import default
 from datetime import datetime
 
-from _email_server import EmailServer
+from ._email_server import EmailServer
 
 class Imap(EmailServer):
 
-    def __init__(self, imap_server, username, password):
-        self.mail = imaplib.IMAP4_SSL(imap_server)
+    def __init__(self, imap_server, imap_port, username, password, email_to = None):
+        self.mail = imaplib.IMAP4_SSL(imap_server, imap_port)
         self.mail.login(username, password)
 
-        self.latest_id = None
+        self.email_to = email_to
         
+        self.mail.select('inbox')
+        _, data = self.mail.uid("SEARCH", None, 'ALL')
+        email_ids = data[0].split()
+        self.latest_id = email_ids[-1] if len(email_ids) != 0 else None
+
     def fetch_emails_since(self, since_timestamp):
 
         # Get the latest email by id
@@ -23,7 +28,6 @@ class Imap(EmailServer):
         email_ids = data[0].split()
         if len(email_ids) == 0:
             return None
-
         self.latest_id = email_ids[-1]
         
         # Fetch the email message by ID
@@ -36,10 +40,13 @@ class Imap(EmailServer):
         to_header = msg.get('To')
         subject_header = msg.get('Subject')
         date_header = msg.get('Date')
+        print(from_header, to_header, subject_header, date_header)
+
+        if self.email_to not in (None, to_header):
+            return None
 
         email_datetime = datetime.strptime(date_header.replace(' (UTC)', ''), '%a, %d %b %Y %H:%M:%S %z').timestamp()
         if email_datetime < since_timestamp:
-            pass
             return None
 
         text_part = msg.get_body(preferencelist=('plain',))
@@ -58,7 +65,7 @@ class Imap(EmailServer):
 
         while time.time() - start_time <= timeout:
             try:
-                email = self.fetch_emails(start_time)
+                email = self.fetch_emails_since(start_time)
                 if email is not None:
                     return email
             except:
