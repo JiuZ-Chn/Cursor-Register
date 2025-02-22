@@ -5,8 +5,10 @@ on:
     inputs:
       number:
         default: "2"
+        type: number
       max_workers:
         default: "1"
+        type: number
       email_server:
         type: choice
         options:
@@ -35,7 +37,7 @@ jobs:
         run: |
           pip3 install -r ./requirements.txt
 
-      - name: “[TempEmail][OneAPI] Run script"
+      - name: "[TempEmail][OneAPI] Run script"
         if: ${{ github.event.inputs.email_server == 'TempEmail' && github.event.inputs.ingest_to_oneapi == 'true' }}
         run: |
           python3 ./cursor_register.py register.number=${{ github.event.inputs.number }} register.max_workers=${{ github.event.inputs.max_workers }} `
