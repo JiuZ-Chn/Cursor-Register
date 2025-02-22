@@ -1,26 +1,26 @@
 register:
-  number: 1
-  max_workers: 1
-  delete_low_balance_account: true
-  delete_low_balance_account_threshold: 50
+  number: 1                                  # The account number you want to register
+  max_workers: 1                             # Max worker number in multi-threading
+  delete_low_balance_account: true           # [IMAP only] Re-register account if the balance is not enough
+  delete_low_balance_account_threshold: 50   # [IMAP only] Re-register account balance threshold
   email_server: 
-    name: temp_email_server
-    use_custom_address: false
-    custom_email_address: 
+    name: temp_email_server                  # Should be temp_email_server or imap_email_server
+    use_custom_address: false                # [IMAP only] Should be true when use imap_email_server
+    custom_email_address:                    # [IMAP only] email address list
     - email1@outlook.com
     - email2@outlook.com
 
-  temp_email_server:
+  temp_email_server:                         # Temp email server you use
     name: Minuteinboxcom
 
-  imap_email_server:
+  imap_email_server:                         # IMAP setting
     imap_server: imap.qq.com
     imap_port: 993
     username: username
     password: password
 
-oneapi:
-  enabled: false
-  url: http://localhost:3000
-  token: your_oneapi_token
-  channel_url: http://localhost:3010/
+oneapi:             
+  enabled: false                             # Ingest data into OneAPI server
+  url: http://localhost:3000                 # OneAPI server url
+  token: your_oneapi_token                   # OneAPI token, see more details in https://github.com/songquanpeng/one-api/blob/main/docs/API.md
+  channel_url: http://localhost:3010         # Base url of the channel
