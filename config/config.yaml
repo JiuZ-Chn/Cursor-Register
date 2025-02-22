@@ -1,5 +1,5 @@
 register:
-  number: 2
+  number: 1
   max_workers: 1
   email_server: 
     name: temp_email_server
