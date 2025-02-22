@@ -45,9 +45,9 @@ jobs:
       - name: "[IMAP] Run script for OneAPI"
         if: ${{ github.event.inputs.email_server == 'IMAP' && github.event.inputs.ingest_to_oneapi == 'true' }}
         run: |
-          python3 ./cursor_register.py register.number=${{ github.event.inputs.number }} register.max_workers=${{ github.event.inputs.max_workers }} \
-          register.email_server.name="imap_email_server" register.email_server.use_custom_address=true register.email_server.custom_email_address="[${{ secrets.CURSOR_CUSTOM_EMAIL_ADDRESS }}]" \
-          register.imap_email_server.imap_server="${{ secrets.CURSOR_IMAP_SERVER }}" register.imap_email_server.imap_port="${{ secrets.CURSOR_IMAP_PORT }}" register.imap_email_server.username="${{ secrets.CURSOR_IMAP_USERNAME }}" register.imap_email_server.password="${{ secrets.CURSOR_IMAP_PASSWORD }}" \
+          python3 ./cursor_register.py register.number=${{ github.event.inputs.number }} register.max_workers=${{ github.event.inputs.max_workers }} ^
+          register.email_server.name="imap_email_server" register.email_server.use_custom_address=true register.email_server.custom_email_address="[${{ secrets.CURSOR_CUSTOM_EMAIL_ADDRESS }}]" ^
+          register.imap_email_server.imap_server="${{ secrets.CURSOR_IMAP_SERVER }}" register.imap_email_server.imap_port="${{ secrets.CURSOR_IMAP_PORT }}" register.imap_email_server.username="${{ secrets.CURSOR_IMAP_USERNAME }}" register.imap_email_server.password="${{ secrets.CURSOR_IMAP_PASSWORD }}" ^
           oneapi.enabled=true oneapi.url="${{ secrets.CURSOR_ONEAPI_URL }}" oneapi.token="${{ secrets.CURSOR_ONEAPI_TOKEN }}" oneapi.channel_url="${{ secrets.CURSOR_CHANNEL_URL }}"           
       - name: Upload csv files to artifact
         if: ${{ github.event.inputs.upload_artifact == 'true' }}
