@@ -16,6 +16,8 @@ class CursorRegister:
     CURSOR_SIGNUP_URL = "https://authenticator.cursor.sh/sign-up"
     CURSOR_SIGNUP_PASSWORD_URL = "https://authenticator.cursor.sh/sign-up/password"
     CURSOR_EMAIL_VERIFICATION_URL = "https://authenticator.cursor.sh/email-verification"
+    CURSOR_SETTING_URL = "https://www.cursor.com/settings"
+    CURSOR_USAGE_URL = "https://www.cursor.com/api/usage"
 
     def __init__(self, 
                  browser: Chromium,
@@ -272,10 +274,19 @@ class CursorRegister:
                 return tab, False
 
         return tab, True
+    
+    def get_usage(self, user_id):
+        tab = self.browser.new_tab(f"{self.CURSOR_USAGE_URL}?user={user_id}")
+        return tab.json
 
     # tab: A tab has signed in 
-    def delete_account(self, tab):
-        pass
+    def delete_account(self):
+        tab = self.browser.new_tab(self.CURSOR_SETTING_URL)
+        tab.ele("xpath=//div[contains(text(), 'Advanced')]").click()
+        tab.ele("xpath=//button[contains(text(), 'Delete Account')]").click()
+        tab.ele("""xpath=//input[@placeholder="Type 'Delete' to confirm"]""").input("Delete", clear=True)
+        tab.ele("xpath=//span[contains(text(), 'Delete')]").click()
+        return tab
 
     def parse_cursor_verification_code(self, email_data):
         message = ""
@@ -302,9 +313,9 @@ class CursorRegister:
         token = cookies.get('WorkosCursorSessionToken', None)
         if enable_register_log:
             if token is not None:
-                print(f"[Register][{self.thread_id}] Register Account Successfully.")
+                print(f"[Register][{self.thread_id}] Get Account Cookie Successfully.")
             else:
-                print(f"[Register][{self.thread_id}] Register Account Failed.")
+                print(f"[Register][{self.thread_id}] Get Account Cookie Failed.")
 
         return token
 
