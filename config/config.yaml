@@ -1,12 +1,21 @@
 register:
   number: 2
   max_workers: 1
+  email_server: 
+    name: temp_email_server
+    use_custom_email: false
+    email_address: 
+    - email1@outlook.com
+    - email2@outlook.com
 
-imap:
-  imap_server: imap.qq.com
-  imap_port: 993
-  username: username
-  password: password
+  temp_email_server:
+    temp_email_cls: Minuteinboxcom
+
+  imap_email_server:
+    imap_server: imap.qq.com
+    imap_port: 993
+    username: username
+    password: password
 
 oneapi:
   enabled: false
