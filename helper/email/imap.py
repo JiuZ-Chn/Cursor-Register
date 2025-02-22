@@ -40,7 +40,6 @@ class Imap(EmailServer):
         to_header = msg.get('To')
         subject_header = msg.get('Subject')
         date_header = msg.get('Date')
-        print(from_header, to_header, subject_header, date_header)
 
         if self.email_to not in (None, to_header):
             return None
