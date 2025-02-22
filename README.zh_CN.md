@@ -29,14 +29,14 @@ pip install -r requirements.txt
 ### 注册账号，并将账号信息保存到csv文件
 
 ```
-python cursor_register.py --number 3
+python cursor_register.py register.number=3
 ```
 - `number`: 希望注册的账号数量
 
 ### 注册账号，并将账号的令牌(Cookie token)导入到[Chat-API](https://github.com/ai365vip/chat-api)
 
 ```
-python cursor_register.py --oneapi_url {oneapi_url} --oneapi_token {oneapi_token} --oneapi_channel_url {oneapi_channel_url} --oneapi --number 5
+python cursor_register.py oneapi.url={oneapi_url} oneapi.token={oneapi_token} oneapi.channel_url={oneapi_channel_url} oneapi.enabled=true register.number=5
 ```
 - `oneapi_url`: Chat-API 地址
 - `oneapi_token`: Chat-API 访问令牌(token)，详见 [OneAPI API](https://github.com/songquanpeng/one-api/blob/main/docs/API.md)
