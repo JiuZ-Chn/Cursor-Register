@@ -28,14 +28,14 @@ pip install -r requirements.txt
 ### Register accounts. Save the account info and cookie token into csv.
 
 ```
-python cursor_register.py --number 3
+python cursor_register.py register.number=3
 ```
 - `number`: The account number you want to register
 
 ### Register accounts. Upload the account cookie token into [Chat-API](https://github.com/ai365vip/chat-api)
 
 ```
-python cursor_register.py --oneapi_url {oneapi_url} --oneapi_token {oneapi_token} --oneapi_channel_url {oneapi_channel_url} --oneapi --number 5
+python cursor_register.py oneapi.url={oneapi_url} oneapi.token={oneapi_token} oneapi.channel_url={oneapi_channel_url} oneapi.enabled=true register.number=5
 ```
 - `oneapi_url`: The web address for your chatapi server. 
 - `oneapi_token`: The access token for your chatapi website. See more details in [OneAPI API](https://github.com/songquanpeng/one-api/blob/main/docs/API.md)
