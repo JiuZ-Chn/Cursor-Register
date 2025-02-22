@@ -43,18 +43,18 @@ def register_cursor_core(register_config, options):
     #tab_signup, status = register.sign_up(email_address)
     token = register.get_cursor_cookie(tab_signin)
 
-    user_id = token.split("%3A%3A")[0]
-    delete_low_balance_account = register_config.delete_low_balance_account
-    if register_config.email_server.name == "imap_email_server" and delete_low_balance_account:
-        delete_low_balance_account_threshold = register_config.delete_low_balance_account_threshold
+    if token is not None:
+        user_id = token.split("%3A%3A")[0]
+        delete_low_balance_account = register_config.delete_low_balance_account
+        if register_config.email_server.name == "imap_email_server" and delete_low_balance_account:
+            delete_low_balance_account_threshold = register_config.delete_low_balance_account_threshold
 
-        usage = register.get_usage(user_id)
-        balance = usage["gpt-4"]["maxRequestUsage"] - usage["gpt-4"]["numRequests"]
-        if balance < delete_low_balance_account_threshold:
-            register.delete_account()
-            tab_signin, status = register.sign_in(email_address)
-            token = register.get_cursor_cookie(tab_signin)
-
+            usage = register.get_usage(user_id)
+            balance = usage["gpt-4"]["maxRequestUsage"] - usage["gpt-4"]["numRequests"]
+            if balance < delete_low_balance_account_threshold:
+                register.delete_account()
+                tab_signin, status = register.sign_in(email_address)
+                token = register.get_cursor_cookie(tab_signin)
 
     if status or not enable_browser_log:
         register.browser.quit(force=True, del_data=True)
