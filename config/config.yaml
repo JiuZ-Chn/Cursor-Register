@@ -19,7 +19,7 @@ register:
     username: username
     password: password
 
-oneapi:             
+oneapi:
   enabled: false                             # Ingest data into OneAPI server
   url: http://localhost:3000                 # OneAPI server url
   token: your_oneapi_token                   # OneAPI token, see more details in https://github.com/songquanpeng/one-api/blob/main/docs/API.md
