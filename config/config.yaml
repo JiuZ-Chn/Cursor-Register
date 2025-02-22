@@ -1,11 +1,11 @@
 register:
   number: 1
   max_workers: 1
+  delete_low_balance_account: true
+  delete_low_balance_account_threshold: 50
   email_server: 
     name: temp_email_server
     use_custom_address: false
-    delete_low_balance_account: true
-    delete_low_balance_account_threshold: 50   
     custom_email_address: 
     - email1@outlook.com
     - email2@outlook.com
