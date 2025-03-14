@@ -3,13 +3,13 @@ name: Cursor Register
 on:
   workflow_dispatch:
     inputs:
-      number:
+      number:4
         default: "2"
         type: number
-      max_workers:
+      max_workers:1
         default: "1"
         type: number
-      email_server:
+      email_server:IMAP
         type: choice
         options:
         - TempEmail
