@@ -11,7 +11,7 @@ register:
     - email2@outlook.com
 
   temp_email_server:                         # Temp email server you use
-    name: Minuteinboxcom
+    name: Gmailpm
 
   imap_email_server:                         # IMAP setting
     imap_server: imap.qq.com
