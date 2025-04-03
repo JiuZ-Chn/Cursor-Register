@@ -320,13 +320,12 @@ class CursorRegister:
             client_login_url = f"https://www.cursor.com/cn/loginDeepControl?challenge={challenge}&uuid={id}&mode=login"
             tab.get(client_login_url)
             tab.ele("xpath=//span[contains(text(), 'Yes, Log In')]").click()
-            auth_pooll_url = f"https://api2.cursor.sh/auth/poll?uuid={id}&verifier={verifier}"
 
+            auth_pooll_url = f"https://api2.cursor.sh/auth/poll?uuid={id}&verifier={verifier}"
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/0.48.6 Chrome/132.0.6834.210 Electron/34.3.4 Safari/537.36",
                 "Accept": "*/*"
             }
-
             response = requests.get(auth_pooll_url, headers = headers, timeout=5)
             data = response.json()
             accessToken = data.get("accessToken", None)
