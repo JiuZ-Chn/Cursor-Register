@@ -56,7 +56,7 @@ def register_cursor_core(register_config, options):
                 tab_signin, status = register.sign_in(email_address)
                 token = register.get_cursor_cookie(tab_signin)
 
-    if status or not enable_browser_log:
+    if status and not enable_browser_log:
         register.browser.quit(force=True, del_data=True)
 
     if status and not hide_account_info:
