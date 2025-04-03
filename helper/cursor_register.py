@@ -1,6 +1,10 @@
-import os
 import re
+import uuid
 import queue
+import hashlib
+import base64
+import secrets
+import requests
 import threading
 from faker import Faker
 from DrissionPage import Chromium
@@ -304,19 +308,45 @@ class CursorRegister:
         return verify_code
 
     def get_cursor_cookie(self, tab):
+        def _generate_pkce_pair():
+            code_verifier = secrets.token_urlsafe(43)
+            code_challenge_digest = hashlib.sha256(code_verifier.encode('utf-8')).digest()
+            code_challenge = base64.urlsafe_b64encode(code_challenge_digest).decode('utf-8').rstrip('=')    
+            return code_verifier, code_challenge
         try:
-            cookies = tab.cookies().as_dict()
+
+            verifier, challenge = _generate_pkce_pair()
+            id = uuid.uuid4()
+            logindeepcontorl = f"https://www.cursor.com/cn/loginDeepControl?challenge={challenge}&uuid={id}&mode=login"
+            tab.get(logindeepcontorl)
+            tab.ele("xpath=//span[contains(text(), 'Yes, Log In')]").click()
+            auth_pooll_url = f"https://api2.cursor.sh/auth/poll?uuid={id}&verifier={verifier}"
+
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/0.48.6 Chrome/132.0.6834.210 Electron/34.3.4 Safari/537.36",
+                "Accept": "*/*"
+            }
+
+            options_response = requests.options(auth_pooll_url, headers= headers, timeout=5)
+            tab.wait(1)
+            response = requests.get(auth_pooll_url, headers = headers, timeout=5)
+            data = response.json()
+            accessToken = data.get("accessToken", None)
+            authId = data.get("authId", "")
+            if len(authId.split("|")) > 1:
+                userId = authId.split("|")[1]
+                token = f"{userId}%3A%3A{accessToken}"
+            else:
+                token = accessToken
         except:
             print(f"[Register][{self.thread_id}] Fail to get cookie.")
-            return None
 
-        token = cookies.get('WorkosCursorSessionToken', None)
         if enable_register_log:
             if token is not None:
                 print(f"[Register][{self.thread_id}] Get Account Cookie Successfully.")
             else:
                 print(f"[Register][{self.thread_id}] Get Account Cookie Failed.")
-
+        
         return token
 
     def _cursor_turnstile(self, tab, retry_times = 5):
