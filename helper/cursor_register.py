@@ -317,8 +317,8 @@ class CursorRegister:
 
             verifier, challenge = _generate_pkce_pair()
             id = uuid.uuid4()
-            logindeepcontorl = f"https://www.cursor.com/cn/loginDeepControl?challenge={challenge}&uuid={id}&mode=login"
-            tab.get(logindeepcontorl)
+            client_login_url = f"https://www.cursor.com/cn/loginDeepControl?challenge={challenge}&uuid={id}&mode=login"
+            tab.get(client_login_url)
             tab.ele("xpath=//span[contains(text(), 'Yes, Log In')]").click()
             auth_pooll_url = f"https://api2.cursor.sh/auth/poll?uuid={id}&verifier={verifier}"
 
@@ -327,8 +327,6 @@ class CursorRegister:
                 "Accept": "*/*"
             }
 
-            options_response = requests.options(auth_pooll_url, headers= headers, timeout=5)
-            tab.wait(1)
             response = requests.get(auth_pooll_url, headers = headers, timeout=5)
             data = response.json()
             accessToken = data.get("accessToken", None)
@@ -340,13 +338,13 @@ class CursorRegister:
                 token = accessToken
         except:
             print(f"[Register][{self.thread_id}] Fail to get cookie.")
+            return None
 
         if enable_register_log:
             if token is not None:
                 print(f"[Register][{self.thread_id}] Get Account Cookie Successfully.")
             else:
                 print(f"[Register][{self.thread_id}] Get Account Cookie Failed.")
-        
         return token
 
     def _cursor_turnstile(self, tab, retry_times = 5):
