@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       number:
-        default: "2"
+        default: "3"
         type: number
       max_workers:
         default: "1"
@@ -12,15 +12,15 @@ on:
       email_server:
         type: choice
         options:
-        - TempEmail
         - IMAP
+        - TempEmail
       ingest_to_oneapi:
         description: 'Ingest account tokens to OneAPI'
         type: boolean
+        default: true
       upload_artifact:
         description: 'Upload account infos to artifact'
         type: boolean
-        default: true
 
 jobs:
   build:
